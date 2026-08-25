@@ -21,15 +21,19 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { Activity, BookOpenText, DatabaseZap, Gauge, GitCompareArrows, LayoutDashboard, LogOut, PanelLeft, ShieldCheck } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+  { icon: LayoutDashboard, label: "Control room", path: "/app" },
+  { icon: GitCompareArrows, label: "State evolution", path: "/app/state" },
+  { icon: DatabaseZap, label: "Rollouts", path: "/app/rollouts" },
+  { icon: Gauge, label: "Operations", path: "/app/operations" },
+  { icon: ShieldCheck, label: "Audit & replay", path: "/app/evidence" },
+  { icon: BookOpenText, label: "Developer docs", path: "/app/docs" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -169,7 +173,7 @@ function DashboardLayoutContent({
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold tracking-tight truncate">
-                    Navigation
+                    DCP / Pilot control
                   </span>
                 </div>
               ) : null}

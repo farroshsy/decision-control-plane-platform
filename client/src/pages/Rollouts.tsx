@@ -1,0 +1,27 @@
+import { Check, CircleStop, FastForward, ShieldAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TenantScopeBar, usePlatformWorkspace } from "@/components/PlatformWorkspace";
+import { StatusPill } from "@/components/StatusPill";
+import { phaseLabels, formatTimestamp } from "@/lib/controlPlane";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+
+const lifecycle = ["planned", "expand", "dual_write", "backfill", "read_canary", "write_canary", "contract", "completed"];
+
+export default function Rollouts() {
+  const { tenantId, workspaceQuery } = usePlatformWorkspace();
+  const workspace = workspaceQuery.data;
+  const utils = trpc.useUtils();
+  const approve = trpc.controlPlane.approveRollout.useMutation({ onSuccess: () => { toast.success("Compliance approval recorded."); utils.controlPlane.workspace.invalidate(); }, onError: error => toast.error(error.message) });
+  const advance = trpc.controlPlane.advanceRollout.useMutation({ onSuccess: result => { toast.success(`Rollout advanced to ${phaseLabels[result.phase]}.`); utils.controlPlane.workspace.invalidate(); }, onError: error => { toast.error(error.message); utils.controlPlane.workspace.invalidate(); } });
+  const rollback = trpc.controlPlane.rollbackRollout.useMutation({ onSuccess: () => { toast.success("Rollback recorded with tenant-scoped evidence."); utils.controlPlane.workspace.invalidate(); }, onError: error => toast.error(error.message) });
+  const rollout = workspace?.rollouts?.[0];
+  const activeIndex = lifecycle.indexOf(rollout?.phase ?? "planned");
+  return <><TenantScopeBar title="Rollout & canary controller" subtitle="Tenant-scoped expand–contract automation with explicit ownership, RPO, audit, approval, evidence, and rollback gates." />
+  {!workspace || !rollout || !tenantId ? null : <div className="space-y-6"><section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_10px_35px_rgb(15,23,42,0.04)]"><div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">Current execution</p><h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{rollout.name}</h2><p className="mt-2 text-sm text-slate-500">{rollout.schemaFrom} → {rollout.schemaTo} · Owner {rollout.ownerRegion} · Epoch {rollout.ownershipEpoch}</p></div><div className="flex flex-wrap gap-2"><StatusPill value={rollout.canaryHealth} /><StatusPill value={rollout.approvalState} /><StatusPill value={rollout.phase} label={phaseLabels[rollout.phase]} /></div></div>
+  <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">{lifecycle.map((phase, index) => <div key={phase} className={`rounded-xl border p-3 ${index < activeIndex ? "border-emerald-200 bg-emerald-50" : index === activeIndex ? "border-blue-300 bg-blue-50 ring-1 ring-blue-200" : "border-slate-200 bg-slate-50"}`}><div className="flex items-center justify-between"><span className="text-xs font-semibold text-slate-700">{index + 1}</span>{index < activeIndex && <Check className="h-3.5 w-3.5 text-emerald-600" />}</div><p className="mt-4 text-sm font-semibold text-slate-950">{phaseLabels[phase]}</p></div>)}</div>
+  <div className="mt-7 flex flex-wrap gap-3"><Button onClick={() => approve.mutate({ tenantId, rolloutId: rollout.id, rationale: "Compliance review of write canary evidence is complete." })} disabled={rollout.approvalState === "approved" || approve.isPending} variant="outline" className="border-slate-300"><ShieldAlert className="mr-2 h-4 w-4" />Approve write canary</Button><Button onClick={() => advance.mutate({ tenantId, rolloutId: rollout.id, rationale: "Operator advanced after confirmed tenant-scoped canary gates." })} disabled={advance.isPending || ["completed", "rolled_back", "rollback_required"].includes(rollout.phase)} className="bg-blue-700 hover:bg-blue-800"><FastForward className="mr-2 h-4 w-4" />Advance gated phase</Button><Button onClick={() => rollback.mutate({ tenantId, rolloutId: rollout.id, rationale: "Explicit operator rollback requested for the current tenant-scoped canary." })} disabled={rollback.isPending || ["completed", "rolled_back"].includes(rollout.phase)} variant="outline" className="border-rose-200 text-rose-700 hover:bg-rose-50"><CircleStop className="mr-2 h-4 w-4" />Record rollback</Button></div></section>
+  <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white"><div className="border-b border-slate-200 px-6 py-5"><h2 className="font-semibold text-slate-950">Execution evidence</h2><p className="mt-1 text-sm text-slate-500">Each phase is accompanied by a tenant-scoped record of the gate result and immutable evidence summary.</p></div><div className="divide-y divide-slate-100">{workspace.steps.map(step => <div key={step.id} className="grid gap-3 px-6 py-5 md:grid-cols-[150px_120px_1fr_160px]"><div><p className="font-medium text-slate-900">{phaseLabels[step.phase] ?? step.phase}</p><p className="mt-1 text-xs text-slate-500">{step.region}</p></div><div><StatusPill value={step.status} /></div><div><p className="text-sm leading-6 text-slate-600">{step.outcomeSummary}</p><p className="mt-2 font-mono text-[11px] leading-5 text-slate-400">{step.evidenceJson}</p></div><p className="text-xs text-slate-500 md:text-right">{formatTimestamp(step.completedAt ?? step.createdAt)}</p></div>)}</div></section>
+  </div>}</>;
+}
+
