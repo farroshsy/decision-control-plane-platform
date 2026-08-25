@@ -7,6 +7,7 @@ import {
   integrationApiKeys,
   integrationDeliveries,
   integrationEndpoints,
+  investigationRecords,
   mcpToolCalls,
   migrationRollouts,
   migrationSteps,
@@ -31,6 +32,21 @@ export const pilotMcpTools = [
     name: "rollout.inspect",
     description: "Inspect the active migration phase, canary posture, approvals, and evidence steps for a tenant.",
     inputSchema: { type: "object", properties: { tenantId: { type: "string" } }, required: ["tenantId"] },
+  },
+  {
+    name: "replay.compare",
+    description: "Inspect a tenant-scoped side-by-side semantic diff between two retained replay traces.",
+    inputSchema: { type: "object", properties: { tenantId: { type: "string" }, decisionId: { type: "string" }, baselineTraceId: { type: "string" }, candidateTraceId: { type: "string" } }, required: ["tenantId", "decisionId"] },
+  },
+  {
+    name: "migration.inspect",
+    description: "Inspect tenant migration phases, evidence, approvals, and the current rollback recommendation without changing rollout authority.",
+    inputSchema: { type: "object", properties: { tenantId: { type: "string" }, rolloutId: { type: "string" } }, required: ["tenantId"] },
+  },
+  {
+    name: "webhook.diagnostics",
+    description: "Inspect tenant-scoped simulated webhook delivery diagnostics and filters. No external endpoint is contacted.",
+    inputSchema: { type: "object", properties: { tenantId: { type: "string" }, search: { type: "string" }, status: { type: "string" }, eventType: { type: "string" } }, required: ["tenantId"] },
   },
   {
     name: "replay.verify",
@@ -138,6 +154,18 @@ export async function ensurePilotArtifacts(userId: number, tenantId: string) {
     });
   }
 
+  const seededRollout = (await db.select().from(migrationRollouts).where(eq(migrationRollouts.tenantId, tenantId)).orderBy(desc(migrationRollouts.updatedAt)).limit(1))[0];
+  await insertOnce(investigationRecords, `${tenantId}_assertion_seed`, {
+    tenantId,
+    recordKind: "replay_assertion",
+    decisionId: "dec_pilot_001",
+    rolloutId: seededRollout?.id ?? null,
+    status: "asserted",
+    summary: "Baseline and current replay representations retain the same held decision outcome.",
+    detailJson: JSON.stringify({ baselineTraceId: `${tenantId}_trace_baseline`, candidateTraceId: `${tenantId}_trace_current`, conclusion: "equivalent_outcome", checked: ["candidateMatch", "evidenceCompleteness", "action", "disposition"], pilotOnly: true }),
+    createdByUserId: userId,
+  });
+
   const webhookId = `${tenantId}_pilot_webhook`;
   const mcpId = `${tenantId}_pilot_mcp`;
   await insertOnce(integrationEndpoints, webhookId, {
@@ -205,7 +233,7 @@ export async function operationalControlRoom(userId: number, tenantId: string) {
   return { tenant, telemetry, rollouts, steps, traces, health, generatedAt: new Date(), pilotMode: tenant.name === "Pilot Transaction Rail" };
 }
 
-export async function replayExplorer(userId: number, tenantId: string, decisionId?: string) {
+export async function replayExplorer(userId: number, tenantId: string, decisionId?: string, baselineTraceId?: string, candidateTraceId?: string) {
   await ensurePilotArtifacts(userId, tenantId);
   await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
   const db = await dbOrThrow();
@@ -214,10 +242,34 @@ export async function replayExplorer(userId: number, tenantId: string, decisionI
     : eq(replayTraces.tenantId, tenantId);
   const traces = await db.select().from(replayTraces).where(conditions).orderBy(desc(replayTraces.createdAt)).limit(50);
   const normalized = traces.map(trace => ({ ...trace, parsedTrace: safelyParse(trace.traceJson) }));
-  const comparison = normalized.length >= 2
-    ? compareTracePair(normalized[normalized.length - 1], normalized[0])
+  const baseline = normalized.find(trace => trace.id === baselineTraceId) ?? normalized[normalized.length - 1];
+  const candidate = normalized.find(trace => trace.id === candidateTraceId) ?? normalized[0];
+  const assertionDecisionId = decisionId ?? "dec_pilot_001";
+  const assertions = await db.select().from(investigationRecords).where(and(eq(investigationRecords.tenantId, tenantId), eq(investigationRecords.recordKind, "replay_assertion"), eq(investigationRecords.decisionId, assertionDecisionId))).orderBy(desc(investigationRecords.createdAt)).limit(30);
+  const comparison = baseline && candidate && baseline.id !== candidate.id
+    ? compareTracePair(baseline, candidate)
     : null;
-  return { traces: normalized, comparison, pilotOnly: true };
+  return { traces: normalized, comparison, assertions: assertions.map(record => ({ ...record, details: safelyParse(record.detailJson) })), pilotOnly: true };
+}
+
+export async function recordReplayAssertion(userId: number, tenantId: string, input: { decisionId: string; baselineTraceId: string; candidateTraceId: string; conclusion: "equivalent" | "not_equivalent" | "needs_review"; rationale: string }) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
+  const result = await replayExplorer(userId, tenantId, input.decisionId, input.baselineTraceId, input.candidateTraceId);
+  if (!result.comparison) throw new Error("Two distinct traces are required to record a replay assertion.");
+  if (input.conclusion === "equivalent" && !result.comparison.equivalent) throw new Error("An equivalent assertion cannot be recorded while semantic, version, or disposition differences remain.");
+  const db = await dbOrThrow();
+  const id = `inv_${nanoid(16)}`;
+  await db.insert(investigationRecords).values({
+    id,
+    tenantId,
+    recordKind: "replay_assertion",
+    decisionId: input.decisionId,
+    status: "asserted",
+    summary: `Replay assertion: ${input.conclusion.replace(/_/g, " ")}.`,
+    detailJson: JSON.stringify({ ...input, comparison: result.comparison, pilotOnly: true }),
+    createdByUserId: userId,
+  });
+  return { id, comparison: result.comparison, pilotOnly: true };
 }
 
 export async function versionComparison(userId: number, tenantId: string) {
@@ -258,6 +310,73 @@ export async function integrationWorkspace(userId: number, tenantId: string) {
     db.select().from(auditExports).where(eq(auditExports.tenantId, tenantId)).orderBy(desc(auditExports.createdAt)).limit(20),
   ]);
   return { endpoints, deliveries, apiKeys: apiKeys.map(redactKey), toolCalls, exports, mcp: { endpoint: "/api/mcp", transport: "JSON-RPC request/response", pilotOnly: true, tools: pilotMcpTools } };
+}
+
+export async function webhookDeliveryDiagnostics(userId: number, tenantId: string, filters: { search?: string; endpointId?: string; eventType?: string; status?: string }) {
+  await ensurePilotArtifacts(userId, tenantId);
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
+  const db = await dbOrThrow();
+  const [endpoints, deliveryRows] = await Promise.all([
+    db.select().from(integrationEndpoints).where(and(eq(integrationEndpoints.tenantId, tenantId), eq(integrationEndpoints.kind, "webhook"))).orderBy(desc(integrationEndpoints.updatedAt)).limit(50),
+    db.select().from(integrationDeliveries).where(eq(integrationDeliveries.tenantId, tenantId)).orderBy(desc(integrationDeliveries.createdAt)).limit(100),
+  ]);
+  const endpointById = new Map(endpoints.map(endpoint => [endpoint.id, endpoint]));
+  const search = filters.search?.trim().toLowerCase() ?? "";
+  const deliveries = deliveryRows.map(delivery => ({ ...delivery, endpointName: endpointById.get(delivery.endpointId)?.name ?? "Unknown tenant endpoint", payload: safelyParse(delivery.payloadPreview) })).filter(delivery => {
+    const haystack = `${delivery.endpointName} ${delivery.eventType} ${delivery.status} ${delivery.resultSummary} ${delivery.payloadPreview}`.toLowerCase();
+    return (!search || haystack.includes(search))
+      && (!filters.endpointId || delivery.endpointId === filters.endpointId)
+      && (!filters.eventType || delivery.eventType === filters.eventType)
+      && (!filters.status || delivery.status === filters.status);
+  });
+  const statusCounts = deliveries.reduce<Record<string, number>>((counts, delivery) => ({ ...counts, [delivery.status]: (counts[delivery.status] ?? 0) + 1 }), {});
+  const eventTypes = Array.from(new Set(deliveryRows.map(delivery => delivery.eventType))).sort();
+  return { endpoints, deliveries, eventTypes, statusCounts, filters, pilotOnly: true, diagnosticBoundary: "Records represent simulated delivery attempts only; no external receiver, retry queue, or delivery guarantee exists." };
+}
+
+export async function migrationInvestigation(userId: number, tenantId: string, rolloutId?: string) {
+  await ensurePilotArtifacts(userId, tenantId);
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
+  const db = await dbOrThrow();
+  const rollout = rolloutId
+    ? (await db.select().from(migrationRollouts).where(and(eq(migrationRollouts.id, rolloutId), eq(migrationRollouts.tenantId, tenantId))).limit(1))[0]
+    : (await db.select().from(migrationRollouts).where(eq(migrationRollouts.tenantId, tenantId)).orderBy(desc(migrationRollouts.updatedAt)).limit(1))[0];
+  if (!rollout) throw new Error("No tenant migration rollout was found.");
+  const [steps, records, room] = await Promise.all([
+    db.select().from(migrationSteps).where(and(eq(migrationSteps.tenantId, tenantId), eq(migrationSteps.rolloutId, rollout.id))).orderBy(desc(migrationSteps.createdAt)).limit(80),
+    db.select().from(investigationRecords).where(and(eq(investigationRecords.tenantId, tenantId), eq(investigationRecords.rolloutId, rollout.id))).orderBy(desc(investigationRecords.createdAt)).limit(40),
+    operationalControlRoom(userId, tenantId),
+  ]);
+  const recommendation = rollbackRecommendation(rollout, room.health, steps);
+  return { rollout, steps, records: records.map(record => ({ ...record, details: safelyParse(record.detailJson) })), health: room.health, recommendation, pilotOnly: true };
+}
+
+export async function recordMigrationApprovalEvidence(userId: number, tenantId: string, input: { rolloutId: string; rationale: string }) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
+  const investigation = await migrationInvestigation(userId, tenantId, input.rolloutId);
+  const db = await dbOrThrow();
+  const id = `inv_${nanoid(16)}`;
+  await db.insert(investigationRecords).values({
+    id, tenantId, rolloutId: input.rolloutId, recordKind: "migration_approval", status: "approved",
+    summary: `Approval evidence recorded for ${investigation.rollout.phase.replace(/_/g, " ")} phase.`,
+    detailJson: JSON.stringify({ rationale: input.rationale, phase: investigation.rollout.phase, health: investigation.health, pilotOnly: true }),
+    createdByUserId: userId,
+  });
+  return { id, recommendation: investigation.recommendation, pilotOnly: true };
+}
+
+export async function recordRollbackRecommendation(userId: number, tenantId: string, input: { rolloutId: string; rationale: string }) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
+  const investigation = await migrationInvestigation(userId, tenantId, input.rolloutId);
+  const db = await dbOrThrow();
+  const id = `inv_${nanoid(16)}`;
+  await db.insert(investigationRecords).values({
+    id, tenantId, rolloutId: input.rolloutId, recordKind: "rollback_recommendation", status: "recommended",
+    summary: investigation.recommendation.summary,
+    detailJson: JSON.stringify({ rationale: input.rationale, recommendation: investigation.recommendation, phase: investigation.rollout.phase, pilotOnly: true }),
+    createdByUserId: userId,
+  });
+  return { id, recommendation: investigation.recommendation, pilotOnly: true };
 }
 
 export async function createPilotApiKey(userId: number, tenantId: string, label: string, scope: IntegrationScope) {
@@ -379,7 +498,13 @@ export async function executeMcpPilotTool(userId: number, input: { tenantId: str
   try {
     if (input.toolName === "tenant.inspect") result = await operationalControlRoom(userId, input.tenantId);
     else if (input.toolName === "rollout.inspect") result = (await operationalControlRoom(userId, input.tenantId)).rollouts;
-    else if (input.toolName === "replay.verify") {
+    else if (input.toolName === "replay.compare") {
+      result = await replayExplorer(userId, input.tenantId, String(input.args.decisionId ?? ""), optionalString(input.args.baselineTraceId), optionalString(input.args.candidateTraceId));
+    } else if (input.toolName === "migration.inspect") {
+      result = await migrationInvestigation(userId, input.tenantId, optionalString(input.args.rolloutId));
+    } else if (input.toolName === "webhook.diagnostics") {
+      result = await webhookDeliveryDiagnostics(userId, input.tenantId, { search: optionalString(input.args.search), endpointId: optionalString(input.args.endpointId), eventType: optionalString(input.args.eventType), status: optionalString(input.args.status) });
+    } else if (input.toolName === "replay.verify") {
       const decisionId = String(input.args.decisionId ?? "");
       result = await verifyReplay(userId, input.tenantId, decisionId, "MCP pilot replay verification requested through session-authenticated tool invocation.");
     } else if (input.toolName === "rollout.advance") {
@@ -413,15 +538,52 @@ function safelyParse(value: string): Record<string, any> {
   }
 }
 
-function compareTracePair(baseline: { parsedTrace: Record<string, any>; stateVersion: string; policyVersion: string; disposition: string }, candidate: { parsedTrace: Record<string, any>; stateVersion: string; policyVersion: string; disposition: string }) {
-  const baselineNotes = Array.isArray(baseline.parsedTrace.semanticNotes) ? baseline.parsedTrace.semanticNotes : [];
-  const candidateNotes = Array.isArray(candidate.parsedTrace.semanticNotes) ? candidate.parsedTrace.semanticNotes : [];
+export function compareTracePair(baseline: { id: string; traceHash: string; parsedTrace: Record<string, any>; stateVersion: string; policyVersion: string; disposition: string }, candidate: { id: string; traceHash: string; parsedTrace: Record<string, any>; stateVersion: string; policyVersion: string; disposition: string }) {
+  const baselineFields = flattenTrace(baseline.parsedTrace);
+  const candidateFields = flattenTrace(candidate.parsedTrace);
+  const fieldDiffs = Array.from(new Set([...Object.keys(baselineFields), ...Object.keys(candidateFields)])).sort().map(path => ({ path, baseline: baselineFields[path] ?? "∅", candidate: candidateFields[path] ?? "∅", changed: baselineFields[path] !== candidateFields[path] })).filter(diff => diff.changed);
+  const versionDiffs = [
+    baseline.stateVersion !== candidate.stateVersion ? { path: "stateVersion", baseline: baseline.stateVersion, candidate: candidate.stateVersion, changed: true } : null,
+    baseline.policyVersion !== candidate.policyVersion ? { path: "policyVersion", baseline: baseline.policyVersion, candidate: candidate.policyVersion, changed: true } : null,
+    baseline.disposition !== candidate.disposition ? { path: "disposition", baseline: baseline.disposition, candidate: candidate.disposition, changed: true } : null,
+  ].filter((diff): diff is { path: string; baseline: string; candidate: string; changed: boolean } => Boolean(diff));
+  const allDifferences = [...versionDiffs, ...fieldDiffs];
   return {
-    baseline: { stateVersion: baseline.stateVersion, policyVersion: baseline.policyVersion, disposition: baseline.disposition },
-    candidate: { stateVersion: candidate.stateVersion, policyVersion: candidate.policyVersion, disposition: candidate.disposition },
+    baseline: { traceId: baseline.id, traceHash: baseline.traceHash, stateVersion: baseline.stateVersion, policyVersion: baseline.policyVersion, disposition: baseline.disposition, fields: baselineFields },
+    candidate: { traceId: candidate.id, traceHash: candidate.traceHash, stateVersion: candidate.stateVersion, policyVersion: candidate.policyVersion, disposition: candidate.disposition, fields: candidateFields },
     dispositionChanged: baseline.disposition !== candidate.disposition,
-    semanticDifferences: candidateNotes.filter((note: string) => !baselineNotes.includes(note)),
+    semanticDifferences: fieldDiffs.filter(diff => diff.path.startsWith("semanticNotes")).map(diff => `${diff.path}: ${diff.baseline} → ${diff.candidate}`),
+    fieldDiffs,
+    versionDiffs,
+    allDifferences,
+    equivalent: allDifferences.length === 0,
   };
+}
+
+function flattenTrace(value: unknown, path = ""): Record<string, string> {
+  if (Array.isArray(value)) return value.reduce<Record<string, string>>((output, item, index) => ({ ...output, ...flattenTrace(item, `${path}[${index}]`) }), {});
+  if (value && typeof value === "object") return Object.entries(value as Record<string, unknown>).sort(([left], [right]) => left.localeCompare(right)).reduce<Record<string, string>>((output, [key, item]) => ({ ...output, ...flattenTrace(item, path ? `${path}.${key}` : key) }), {});
+  return { [path || "value"]: value === undefined ? "∅" : JSON.stringify(value) };
+}
+
+function optionalString(value: unknown) {
+  return typeof value === "string" && value.trim().length ? value : undefined;
+}
+
+function rollbackRecommendation(rollout: { phase: string; canaryHealth: string; approvalState: string; rollbackReason: string | null }, health: { rpoSafe: boolean; ownerMatched: boolean; epochMatched: boolean; auditSafe: boolean; canaryHealthy: boolean; replayEquivalent: boolean } | null, steps: Array<{ status: string }>) {
+  const blockingReasons = [
+    health && !health.rpoSafe ? "RPO headroom is outside the tenant target." : null,
+    health && !health.ownerMatched ? "Observed owner region does not match rollout authority." : null,
+    health && !health.epochMatched ? "Observed ownership epoch differs from rollout authority." : null,
+    health && !health.auditSafe ? "Audit durability is above the admitted boundary." : null,
+    health && !health.canaryHealthy ? "Canary health is not healthy." : null,
+    health && !health.replayEquivalent ? "Replay equivalence evidence is incomplete or divergent." : null,
+    rollout.canaryHealth === "blocked" ? "Rollout has a blocked canary state." : null,
+    steps.some(step => step.status === "blocked") ? "A persisted migration step is blocked." : null,
+  ].filter(Boolean) as string[];
+  return blockingReasons.length
+    ? { level: "recommend_rollback", summary: "Recommendation: pause authority expansion and prepare controlled rollback.", reasons: blockingReasons, nextAction: "Record rationale, reconcile actions, fence authority if required, then use the governed rollback control." }
+    : { level: "continue_observation", summary: "Recommendation: continue the bounded observation window; no automatic promotion occurs.", reasons: ["Current retained telemetry and replay evidence do not trigger a rollback recommendation."], nextAction: rollout.approvalState === "pending" ? "Collect required approval evidence before write-canary authority." : "Review the next phase’s gates and advance only through the governed rollout control." };
 }
 
 function toCsv(payload: Record<string, any>) {

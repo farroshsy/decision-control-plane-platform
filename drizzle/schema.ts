@@ -164,6 +164,27 @@ export const replayTraces = mysqlTable(
   table => [index("replay_traces_tenant_idx").on(table.tenantId, table.decisionId, table.createdAt)]
 );
 
+export const investigationRecords = mysqlTable(
+  "investigationRecords",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    recordKind: mysqlEnum("recordKind", ["replay_assertion", "migration_approval", "rollback_recommendation"]).notNull(),
+    decisionId: varchar("decisionId", { length: 96 }),
+    rolloutId: varchar("rolloutId", { length: 64 }),
+    status: mysqlEnum("status", ["asserted", "approved", "recommended", "acknowledged", "superseded"]).notNull(),
+    summary: varchar("summary", { length: 280 }).notNull(),
+    detailJson: text("detailJson").notNull(),
+    createdByUserId: int("createdByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("investigation_records_tenant_idx").on(table.tenantId, table.createdAt),
+    index("investigation_records_decision_idx").on(table.tenantId, table.decisionId, table.createdAt),
+    index("investigation_records_rollout_idx").on(table.tenantId, table.rolloutId, table.createdAt),
+  ]
+);
+
 export const integrationApiKeys = mysqlTable(
   "integrationApiKeys",
   {

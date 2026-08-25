@@ -14,10 +14,25 @@ export const controlPlaneRouter = router({
   workspace: protectedProcedure.input(tenantInput).query(({ ctx, input }) => store.workspaceForUser(ctx.user.id, input.tenantId)),
   operationalControlRoom: protectedProcedure.input(tenantInput).query(({ ctx, input }) => expansion.operationalControlRoom(ctx.user.id, input.tenantId)),
   replayExplorer: protectedProcedure
-    .input(tenantInput.extend({ decisionId: z.string().min(3).max(96).optional() }))
-    .query(({ ctx, input }) => expansion.replayExplorer(ctx.user.id, input.tenantId, input.decisionId)),
+    .input(tenantInput.extend({ decisionId: z.string().min(3).max(96).optional(), baselineTraceId: z.string().min(3).max(64).optional(), candidateTraceId: z.string().min(3).max(64).optional() }))
+    .query(({ ctx, input }) => expansion.replayExplorer(ctx.user.id, input.tenantId, input.decisionId, input.baselineTraceId, input.candidateTraceId)),
   versionComparison: protectedProcedure.input(tenantInput).query(({ ctx, input }) => expansion.versionComparison(ctx.user.id, input.tenantId)),
   integrations: protectedProcedure.input(tenantInput).query(({ ctx, input }) => expansion.integrationWorkspace(ctx.user.id, input.tenantId)),
+  webhookDeliveryDiagnostics: protectedProcedure
+    .input(tenantInput.extend({ search: z.string().max(180).optional(), endpointId: z.string().min(3).max(64).optional(), eventType: z.string().min(3).max(96).optional(), status: z.string().min(3).max(64).optional() }))
+    .query(({ ctx, input }) => expansion.webhookDeliveryDiagnostics(ctx.user.id, input.tenantId, input)),
+  migrationInvestigation: protectedProcedure
+    .input(tenantInput.extend({ rolloutId: z.string().min(3).max(64).optional() }))
+    .query(({ ctx, input }) => expansion.migrationInvestigation(ctx.user.id, input.tenantId, input.rolloutId)),
+  recordReplayAssertion: protectedProcedure
+    .input(tenantInput.extend({ decisionId: z.string().min(3).max(96), baselineTraceId: z.string().min(3).max(64), candidateTraceId: z.string().min(3).max(64), conclusion: z.enum(["equivalent", "not_equivalent", "needs_review"]), rationale: z.string().min(12).max(1_000) }))
+    .mutation(({ ctx, input }) => expansion.recordReplayAssertion(ctx.user.id, input.tenantId, input)),
+  recordMigrationApprovalEvidence: protectedProcedure
+    .input(tenantInput.extend({ rolloutId: z.string().min(3).max(64), rationale: z.string().min(12).max(1_000) }))
+    .mutation(({ ctx, input }) => expansion.recordMigrationApprovalEvidence(ctx.user.id, input.tenantId, input)),
+  recordRollbackRecommendation: protectedProcedure
+    .input(tenantInput.extend({ rolloutId: z.string().min(3).max(64), rationale: z.string().min(12).max(1_000) }))
+    .mutation(({ ctx, input }) => expansion.recordRollbackRecommendation(ctx.user.id, input.tenantId, input)),
   createPilotApiKey: protectedProcedure
     .input(tenantInput.extend({ label: z.string().min(3).max(120), scope: z.enum(["read_only", "replay_operator", "rollout_operator"]) }))
     .mutation(({ ctx, input }) => expansion.createPilotApiKey(ctx.user.id, input.tenantId, input.label, input.scope)),

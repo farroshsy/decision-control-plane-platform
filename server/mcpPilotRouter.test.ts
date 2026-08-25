@@ -8,7 +8,11 @@ vi.mock("./_core/sdk", () => ({ sdk: { authenticateRequest } }));
 vi.mock("./controlPlaneExpansionStore", () => ({
   executeMcpPilotTool,
   authenticatePilotApiKey,
-  pilotMcpTools: [{ name: "tenant.inspect", description: "Inspect a tenant", inputSchema: { type: "object" } }],
+  pilotMcpTools: [
+    { name: "tenant.inspect", description: "Inspect a tenant", inputSchema: { type: "object" } },
+    { name: "replay.compare", description: "Compare retained tenant traces", inputSchema: { type: "object" } },
+    { name: "webhook.diagnostics", description: "Inspect simulated tenant deliveries", inputSchema: { type: "object" } },
+  ],
 }));
 
 import { registerMcpPilotRoutes } from "./mcpPilotRouter";
@@ -52,5 +56,18 @@ describe("MCP pilot router", () => {
     }, res);
     expect(authenticatePilotApiKey).toHaveBeenCalledWith("dcp_pilot_example", "tenant_alpha", "tenant.inspect");
     expect(executeMcpPilotTool).toHaveBeenCalledWith(91, expect.objectContaining({ apiKeyId: "key_pilot", tenantId: "tenant_alpha" }));
+  });
+
+  it("dispatches semantic comparison with the same tenant-scoped arguments supplied by the caller", async () => {
+    await handler({
+      body: { jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "replay.compare", arguments: { tenantId: "tenant_alpha", decisionId: "dec_1", baselineTraceId: "trace_a", candidateTraceId: "trace_b" } } },
+    }, res);
+    expect(executeMcpPilotTool).toHaveBeenCalledWith(77, expect.objectContaining({ tenantId: "tenant_alpha", toolName: "replay.compare", args: expect.objectContaining({ decisionId: "dec_1", baselineTraceId: "trace_a", candidateTraceId: "trace_b" }) }));
+  });
+
+  it("advertises the bounded diagnostic inspection tools without treating them as streaming operations", async () => {
+    await handler({ body: { jsonrpc: "2.0", id: 6, method: "tools/list" } }, res);
+    const response = res.json.mock.calls[0][0];
+    expect(response.result.tools.map((tool: { name: string }) => tool.name)).toEqual(expect.arrayContaining(["replay.compare", "webhook.diagnostics"]));
   });
 });

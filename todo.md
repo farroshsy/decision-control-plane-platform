@@ -27,5 +27,14 @@
 - [x] Finish dark-mode styling and contrast support for remaining authenticated pages and run focused accessibility checks across light and dark modes.
 - [x] Browser-verify tenant-scoped simulated webhook subscription controls, audit-export surfaces, and bounded MCP integration workflows after the integration changes.
 - [x] Add release notes that explicitly frame the expansion as Observe → Integrate → Automate and link each delivered pilot surface.
-- [ ] Save a post-expansion checkpoint after all tests, browser checks, and release notes are complete.
+- [x] Save a post-expansion checkpoint after all tests, browser checks, and release notes are complete.
 - [x] Keep every integration surface explicitly within the pilot foundation boundary: simulated delivery history, no claims of production webhook guarantees, long-lived MCP connections, or automated infrastructure control.
+- [x] Reassess all governing theory, pilot, migration, observability, API, SDK, and release documents to prioritize the next business-process-aware workflow enhancement.
+- [x] Add a tenant-scoped side-by-side Replay Explorer semantic diff that compares schema, state, policy, trace fields, and equivalence results across versions.
+- [x] Add an interactive Migration Timeline with phase selection, contextual status details, approvals, rollback recommendations, and simulated evidence updates.
+- [x] Add governed operator workflows for replay assertions, migration approvals, and recorded rollback recommendations without bypassing existing safety gates.
+- [x] Add searchable, filterable webhook delivery history with event, endpoint, status, and diagnostic inspection for tenant-scoped integrations.
+- [x] Expand the developer portal with executable, versioned API examples and SDK usage guidance for the investigation workflow.
+- [x] Extend the bounded MCP pilot catalog with additional inspection commands that expose semantic diffs, migration details, and webhook diagnostics under tenant and scope guards.
+- [x] Add test coverage and browser validation for the governed investigation workflow expansion.
+- [ ] Save a release checkpoint for the governed investigation workflow expansion.
