@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Activity, BookOpenText, Bot, DatabaseZap, Gauge, GitCompareArrows, LayoutDashboard, LogOut, Moon, Network, PanelLeft, ShieldCheck, Sun, Waypoints } from "lucide-react";
+import { Activity, BookOpenText, Bot, DatabaseZap, FileSearch, Gauge, GitCompareArrows, LayoutDashboard, LogOut, Moon, Network, PanelLeft, ShieldCheck, Sun, Waypoints } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -35,6 +35,7 @@ const menuItems = [
   { icon: Gauge, label: "Operations", path: "/app/operations" },
   { icon: Waypoints, label: "Migration timeline", path: "/app/migration" },
   { icon: GitCompareArrows, label: "Replay explorer", path: "/app/replay" },
+  { icon: FileSearch, label: "Investigations", path: "/app/investigations" },
   { icon: Activity, label: "Version lab", path: "/app/versions" },
   { icon: ShieldCheck, label: "Audit & replay", path: "/app/evidence" },
   { icon: Network, label: "Integrations", path: "/app/integrations" },

@@ -16,6 +16,7 @@ import MigrationTimeline from "./pages/MigrationTimeline";
 import ReplayExplorer from "./pages/ReplayExplorer";
 import VersionLab from "./pages/VersionLab";
 import Integrations from "./pages/Integrations";
+import InvestigationCase from "./pages/InvestigationCase";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -29,6 +30,7 @@ function Router() {
       <Route path={"/app/operations"}><DashboardLayout><Operations /></DashboardLayout></Route>
       <Route path={"/app/migration"}><DashboardLayout><MigrationTimeline /></DashboardLayout></Route>
       <Route path={"/app/replay"}><DashboardLayout><ReplayExplorer /></DashboardLayout></Route>
+      <Route path={"/app/investigations"}><DashboardLayout><InvestigationCase /></DashboardLayout></Route>
       <Route path={"/app/versions"}><DashboardLayout><VersionLab /></DashboardLayout></Route>
       <Route path={"/app/evidence"}><DashboardLayout><Evidence /></DashboardLayout></Route>
       <Route path={"/app/integrations"}><DashboardLayout><Integrations /></DashboardLayout></Route>

@@ -7,6 +7,8 @@ import {
   integrationApiKeys,
   integrationDeliveries,
   integrationEndpoints,
+  integrationRetryAudits,
+  investigationCases,
   investigationRecords,
   mcpToolCalls,
   migrationRollouts,
@@ -18,6 +20,7 @@ import {
 } from "../drizzle/schema";
 import { getDb } from "./db";
 import { advanceRollout, assertTenantRole, verifyReplay } from "./controlPlaneStore";
+import { controlledRetryPlan, outcomeRequiresSeparateAuthority, type InvestigationOutcomeStatus } from "./investigationCasePolicy";
 
 type IntegrationScope = "read_only" | "replay_operator" | "rollout_operator";
 type ApiKeyRow = typeof integrationApiKeys.$inferSelect;
@@ -88,7 +91,25 @@ export async function ensurePilotArtifacts(userId: number, tenantId: string) {
   // A single retained trace is the pilot seed sentinel. Once it exists, later
   // control-room refreshes must not fan out into dozens of select/insert checks.
   const alreadySeeded = (await db.select({ id: replayTraces.id }).from(replayTraces).where(and(eq(replayTraces.tenantId, tenantId), eq(replayTraces.decisionId, "dec_pilot_001"))).limit(1))[0];
-  if (alreadySeeded) return;
+  if (alreadySeeded) {
+    const existingCase = (await db.select({ id: investigationCases.id }).from(investigationCases).where(and(eq(investigationCases.tenantId, tenantId), eq(investigationCases.decisionId, "dec_pilot_001"))).limit(1))[0];
+    if (!existingCase) {
+      const existingRollout = (await db.select().from(migrationRollouts).where(eq(migrationRollouts.tenantId, tenantId)).orderBy(desc(migrationRollouts.updatedAt)).limit(1))[0];
+      await insertOnce(investigationCases, `${tenantId}_case_pilot_001`, {
+        tenantId,
+        decisionId: "dec_pilot_001",
+        rolloutId: existingRollout?.id ?? null,
+        status: "open",
+        approvalState: "pending",
+        recommendedAction: "retain_read_canary_and_obtain_write_authority_approval",
+        summary: "Staged state 2.2 and policy epoch 28 change the retained replay disposition from held to rejected.",
+        outcomeRationale: null,
+        createdByUserId: userId,
+        resolvedByUserId: null,
+      });
+    }
+    return;
+  }
 
   const manifestId = `${tenantId}_manifest_220`;
   await insertOnce(stateManifests, manifestId, {
@@ -164,6 +185,18 @@ export async function ensurePilotArtifacts(userId: number, tenantId: string) {
     summary: "Baseline and current replay representations retain the same held decision outcome.",
     detailJson: JSON.stringify({ baselineTraceId: `${tenantId}_trace_baseline`, candidateTraceId: `${tenantId}_trace_current`, conclusion: "equivalent_outcome", checked: ["candidateMatch", "evidenceCompleteness", "action", "disposition"], pilotOnly: true }),
     createdByUserId: userId,
+  });
+  await insertOnce(investigationCases, `${tenantId}_case_pilot_001`, {
+    tenantId,
+    decisionId: "dec_pilot_001",
+    rolloutId: seededRollout?.id ?? null,
+    status: "open",
+    approvalState: "pending",
+    recommendedAction: "retain_read_canary_and_obtain_write_authority_approval",
+    summary: "Staged state 2.2 and policy epoch 28 change the retained replay disposition from held to rejected.",
+    outcomeRationale: null,
+    createdByUserId: userId,
+    resolvedByUserId: null,
   });
 
   const webhookId = `${tenantId}_pilot_webhook`;
@@ -302,14 +335,15 @@ export async function integrationWorkspace(userId: number, tenantId: string) {
   await ensurePilotArtifacts(userId, tenantId);
   await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
   const db = await dbOrThrow();
-  const [endpoints, deliveries, apiKeys, toolCalls, exports] = await Promise.all([
+  const [endpoints, deliveries, apiKeys, toolCalls, exports, retryAudits] = await Promise.all([
     db.select().from(integrationEndpoints).where(eq(integrationEndpoints.tenantId, tenantId)).orderBy(desc(integrationEndpoints.updatedAt)).limit(20),
     db.select().from(integrationDeliveries).where(eq(integrationDeliveries.tenantId, tenantId)).orderBy(desc(integrationDeliveries.createdAt)).limit(30),
     db.select().from(integrationApiKeys).where(eq(integrationApiKeys.tenantId, tenantId)).orderBy(desc(integrationApiKeys.createdAt)).limit(20),
     db.select().from(mcpToolCalls).where(eq(mcpToolCalls.tenantId, tenantId)).orderBy(desc(mcpToolCalls.createdAt)).limit(30),
     db.select().from(auditExports).where(eq(auditExports.tenantId, tenantId)).orderBy(desc(auditExports.createdAt)).limit(20),
+    db.select().from(integrationRetryAudits).where(eq(integrationRetryAudits.tenantId, tenantId)).orderBy(desc(integrationRetryAudits.createdAt)).limit(30),
   ]);
-  return { endpoints, deliveries, apiKeys: apiKeys.map(redactKey), toolCalls, exports, mcp: { endpoint: "/api/mcp", transport: "JSON-RPC request/response", pilotOnly: true, tools: pilotMcpTools } };
+  return { endpoints, deliveries, apiKeys: apiKeys.map(redactKey), toolCalls, exports, retryAudits: retryAudits.map(retry => ({ ...retry, details: safelyParse(retry.detailJson) })), mcp: { endpoint: "/api/mcp", transport: "JSON-RPC request/response", pilotOnly: true, tools: pilotMcpTools } };
 }
 
 export async function webhookDeliveryDiagnostics(userId: number, tenantId: string, filters: { search?: string; endpointId?: string; eventType?: string; status?: string }) {
@@ -362,6 +396,7 @@ export async function recordMigrationApprovalEvidence(userId: number, tenantId: 
     detailJson: JSON.stringify({ rationale: input.rationale, phase: investigation.rollout.phase, health: investigation.health, pilotOnly: true }),
     createdByUserId: userId,
   });
+  await db.update(investigationCases).set({ approvalState: "approved" }).where(and(eq(investigationCases.tenantId, tenantId), eq(investigationCases.rolloutId, input.rolloutId)));
   return { id, recommendation: investigation.recommendation, pilotOnly: true };
 }
 
@@ -376,7 +411,84 @@ export async function recordRollbackRecommendation(userId: number, tenantId: str
     detailJson: JSON.stringify({ rationale: input.rationale, recommendation: investigation.recommendation, phase: investigation.rollout.phase, pilotOnly: true }),
     createdByUserId: userId,
   });
+  await db.update(investigationCases).set({ recommendedAction: "review_rollback_recommendation" }).where(and(eq(investigationCases.tenantId, tenantId), eq(investigationCases.rolloutId, input.rolloutId)));
   return { id, recommendation: investigation.recommendation, pilotOnly: true };
+}
+
+export async function investigationCaseDetail(userId: number, tenantId: string, input: { caseId?: string; decisionId?: string; rolloutId?: string }) {
+  await ensurePilotArtifacts(userId, tenantId);
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
+  const db = await dbOrThrow();
+  const baseConditions = [eq(investigationCases.tenantId, tenantId)];
+  if (input.caseId) baseConditions.push(eq(investigationCases.id, input.caseId));
+  else if (input.decisionId) baseConditions.push(eq(investigationCases.decisionId, input.decisionId));
+  else if (input.rolloutId) baseConditions.push(eq(investigationCases.rolloutId, input.rolloutId));
+  const investigationCase = (await db.select().from(investigationCases).where(and(...baseConditions)).orderBy(desc(investigationCases.updatedAt)).limit(1))[0];
+  if (!investigationCase) throw new Error("No tenant-scoped investigation case was found for the requested context.");
+  const [evidence, traces, records, rollout, actions] = await Promise.all([
+    db.select().from(decisionEvidence).where(and(eq(decisionEvidence.tenantId, tenantId), eq(decisionEvidence.decisionId, investigationCase.decisionId))).orderBy(desc(decisionEvidence.createdAt)).limit(20),
+    db.select().from(replayTraces).where(and(eq(replayTraces.tenantId, tenantId), eq(replayTraces.decisionId, investigationCase.decisionId))).orderBy(desc(replayTraces.createdAt)).limit(30),
+    db.select().from(investigationRecords).where(eq(investigationRecords.tenantId, tenantId)).orderBy(desc(investigationRecords.createdAt)).limit(100),
+    investigationCase.rolloutId ? db.select().from(migrationRollouts).where(and(eq(migrationRollouts.tenantId, tenantId), eq(migrationRollouts.id, investigationCase.rolloutId))).limit(1) : Promise.resolve([]),
+    db.select().from(mcpToolCalls).where(eq(mcpToolCalls.tenantId, tenantId)).orderBy(desc(mcpToolCalls.createdAt)).limit(30),
+  ]);
+  return {
+    investigationCase,
+    evidence,
+    traces: traces.map(trace => ({ ...trace, parsedTrace: safelyParse(trace.traceJson) })),
+    records: records.filter(record => record.decisionId === investigationCase.decisionId || (investigationCase.rolloutId !== null && record.rolloutId === investigationCase.rolloutId)).map(record => ({ ...record, details: safelyParse(record.detailJson) })),
+    rollout: rollout[0] ?? null,
+    relatedToolCalls: actions.filter(action => action.inputJson.includes(investigationCase.decisionId)),
+    pilotOnly: true,
+  };
+}
+
+export async function updateInvestigationOutcome(userId: number, tenantId: string, input: { caseId: string; status: InvestigationOutcomeStatus; rationale: string }) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
+  const db = await dbOrThrow();
+  const investigationCase = (await db.select().from(investigationCases).where(and(eq(investigationCases.id, input.caseId), eq(investigationCases.tenantId, tenantId))).limit(1))[0];
+  if (!investigationCase) throw new Error("The investigation case is not available in this tenant scope.");
+  const authorityBoundary = outcomeRequiresSeparateAuthority(input.status) ? "A rollback-required conclusion remains a recommendation; the separately protected rollout rollback control retains execution authority." : "This conclusion records accountable case evidence only and does not alter rollout authority.";
+  await db.update(investigationCases).set({ status: input.status, outcomeRationale: `${input.rationale}\n\n${authorityBoundary}`, resolvedByUserId: userId }).where(and(eq(investigationCases.id, input.caseId), eq(investigationCases.tenantId, tenantId)));
+  await db.insert(investigationRecords).values({
+    id: `inv_${nanoid(16)}`,
+    tenantId,
+    recordKind: "replay_assertion",
+    decisionId: investigationCase.decisionId,
+    rolloutId: investigationCase.rolloutId,
+    status: "acknowledged",
+    summary: `Investigation outcome recorded: ${input.status.replace(/_/g, " ")}.`,
+    detailJson: JSON.stringify({ caseId: input.caseId, outcome: input.status, rationale: input.rationale, authorityBoundary, actorUserId: userId, pilotOnly: true }),
+    createdByUserId: userId,
+  });
+  return { ok: true as const, caseId: input.caseId, status: input.status, pilotOnly: true };
+}
+
+export async function exportReplayInvestigation(userId: number, tenantId: string, input: { decisionId: string; baselineTraceId?: string; candidateTraceId?: string }) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator"]);
+  const [replay, detail] = await Promise.all([
+    replayExplorer(userId, tenantId, input.decisionId, input.baselineTraceId, input.candidateTraceId),
+    investigationCaseDetail(userId, tenantId, { decisionId: input.decisionId }),
+  ]);
+  const payload = {
+    packageType: "dcp_pilot_replay_investigation",
+    tenantId,
+    decisionId: input.decisionId,
+    exportedAt: new Date().toISOString(),
+    semanticComparison: replay.comparison,
+    replayAssertions: replay.assertions,
+    evidenceBindings: detail.evidence,
+    retainedTraces: detail.traces,
+    investigationCase: detail.investigationCase,
+    recommendationAndApprovalRecords: detail.records,
+    auditReferences: detail.relatedToolCalls,
+    pilotOnly: true,
+    boundary: "This package is tenant-scoped pilot evidence. It does not establish external delivery, legal reporting, or infrastructure action authority.",
+  };
+  const content = JSON.stringify(payload, null, 2);
+  const db = await dbOrThrow();
+  await db.insert(auditExports).values({ id: `exp_${nanoid(16)}`, tenantId, requestedByUserId: userId, format: "json", scope: "replay_investigation_package", status: "prepared", summary: `Prepared replay investigation package for decision ${input.decisionId}.` });
+  return { filename: `dcp-${tenantId}-${input.decisionId}-replay-investigation.json`, content, format: "json" as const, pilotOnly: true };
 }
 
 export async function createPilotApiKey(userId: number, tenantId: string, label: string, scope: IntegrationScope) {
@@ -422,6 +534,40 @@ export async function simulateWebhookDelivery(userId: number, tenantId: string, 
     resultSummary: "Pilot delivery simulation recorded. No external HTTP request or retry queue was used.",
   });
   return { ok: true as const, id };
+}
+
+export async function retrySimulatedWebhookDelivery(userId: number, tenantId: string, deliveryId: string, rationale: string) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
+  const db = await dbOrThrow();
+  const sourceDelivery = (await db.select().from(integrationDeliveries).where(and(eq(integrationDeliveries.id, deliveryId), eq(integrationDeliveries.tenantId, tenantId))).limit(1))[0];
+  if (!sourceDelivery) throw new Error("The simulated delivery is not available within this tenant scope.");
+  const endpoint = (await db.select().from(integrationEndpoints).where(and(eq(integrationEndpoints.id, sourceDelivery.endpointId), eq(integrationEndpoints.tenantId, tenantId), eq(integrationEndpoints.kind, "webhook"))).limit(1))[0];
+  if (!endpoint || endpoint.status !== "pilot_ready") throw new Error("The delivery endpoint is not an active tenant-scoped webhook subscription.");
+  const plan = controlledRetryPlan(sourceDelivery.attemptCount);
+  const resultDeliveryId = `del_${nanoid(16)}`;
+  await db.insert(integrationDeliveries).values({
+    id: resultDeliveryId,
+    tenantId,
+    endpointId: sourceDelivery.endpointId,
+    eventType: sourceDelivery.eventType,
+    status: "simulated_delivered",
+    attemptCount: plan.nextAttemptCount,
+    payloadPreview: sourceDelivery.payloadPreview,
+    resultSummary: `Controlled retry simulation recorded from attempt ${sourceDelivery.attemptCount} to ${plan.nextAttemptCount}. No external HTTP receiver was contacted.`,
+  });
+  await db.insert(integrationRetryAudits).values({
+    id: `retry_${nanoid(16)}`,
+    tenantId,
+    endpointId: sourceDelivery.endpointId,
+    sourceDeliveryId: sourceDelivery.id,
+    resultDeliveryId,
+    actionType: "retry_simulation",
+    payloadVersion: plan.payloadVersion,
+    resultStatus: plan.resultStatus,
+    operatorUserId: userId,
+    detailJson: JSON.stringify({ rationale, sourceStatus: sourceDelivery.status, sourceAttemptCount: sourceDelivery.attemptCount, resultAttemptCount: plan.nextAttemptCount, endpointName: endpoint.name, ...plan, pilotOnly: true }),
+  });
+  return { ok: true as const, sourceDeliveryId: sourceDelivery.id, resultDeliveryId, payloadVersion: plan.payloadVersion, resultStatus: plan.resultStatus, pilotOnly: true };
 }
 
 export async function createPilotWebhookEndpoint(userId: number, tenantId: string, input: { name: string; description: string; eventTypes: string[] }) {

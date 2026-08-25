@@ -37,4 +37,14 @@
 - [x] Expand the developer portal with executable, versioned API examples and SDK usage guidance for the investigation workflow.
 - [x] Extend the bounded MCP pilot catalog with additional inspection commands that expose semantic diffs, migration details, and webhook diagnostics under tenant and scope guards.
 - [x] Add test coverage and browser validation for the governed investigation workflow expansion.
-- [ ] Save a release checkpoint for the governed investigation workflow expansion.
+- [x] Save a release checkpoint for the governed investigation workflow expansion.
+- [x] Re-read BPMN and process-model materials and document the next application-level business-process enhancement.
+- [x] Add tenant-scoped Replay Explorer export packages containing semantic diffs, replay assertions, evidence bindings, verification results, and retained audit references.
+- [x] Add an investigation detail view linking divergence, evidence, schema and policy versions, affected tenant, recommendation, approval state, outcome, and audit records.
+- [x] Add investigation outcome tracking for confirmed, explained, accepted, and rollback-required conclusions with accountable actor and rationale.
+- [x] Add cross-workspace trace navigation from migration phases through state, replay, semantic diff, evidence, decision, and audit records while preserving tenant and migration context.
+- [x] Add migration readiness progress bars and color-coded status badges for approval, replay, RPO, audit, ownership, and rollback posture.
+- [x] Add controlled tenant-scoped webhook retry simulation that records attempt, payload version, result, and operator action without contacting an external receiver.
+- [x] Replace static tenant-scoped loading panels with compact animated skeleton states across investigation, replay, migration, and integration workspaces.
+- [x] Replace the remaining static delivery-diagnostics loading message with the shared animated workspace loading state.
+- [x] Add BPMN-aware workflow documentation, tests, browser validation, and a release checkpoint for the investigation case-flow expansion.

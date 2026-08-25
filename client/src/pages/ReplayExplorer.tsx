@@ -1,13 +1,16 @@
-import { CircleAlert, FileCheck2, GitCompareArrows, PlayCircle, SearchCheck, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, CircleAlert, Download, FileCheck2, GitCompareArrows, PlayCircle, SearchCheck, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PilotWorkspaceEmptyState, TenantScopeBar, usePlatformWorkspace } from "@/components/PlatformWorkspace";
+import { WorkspaceLoadingState } from "@/components/WorkspaceLoadingState";
 import { StatusPill } from "@/components/StatusPill";
 import { formatTimestamp } from "@/lib/controlPlane";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+
+function downloadPackage(filename: string, content: string) { const blob = new Blob([content], { type: "application/json" }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click(); URL.revokeObjectURL(url); }
 
 export default function ReplayExplorer() {
   const { tenantId } = usePlatformWorkspace();
@@ -24,6 +27,10 @@ export default function ReplayExplorer() {
   });
   const assert = trpc.controlPlane.recordReplayAssertion.useMutation({
     onSuccess: () => { toast.success("Replay assertion recorded as an additive tenant-scoped investigation record."); utils.controlPlane.replayExplorer.invalidate(); },
+    onError: error => toast.error(error.message),
+  });
+  const exportPackage = trpc.controlPlane.exportReplayInvestigation.useMutation({
+    onSuccess: result => { downloadPackage(result.filename, result.content); toast.success("Replay investigation package prepared and downloaded."); },
     onError: error => toast.error(error.message),
   });
   const traces = explorer.data?.traces ?? [];
@@ -43,7 +50,7 @@ export default function ReplayExplorer() {
 
   return <>
     <TenantScopeBar title="Replay Explorer" subtitle="Compare retained decision traces as semantic evidence: field meaning, state and policy versions, disposition, authority implications, and replay assertions remain explicit and tenant-bounded." />
-    {!tenantId ? <PilotWorkspaceEmptyState capability="Replay Explorer" /> : !explorer.data ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">Loading retained replay traces…</div> : <div className="space-y-6">
+    {!tenantId ? <PilotWorkspaceEmptyState capability="Replay Explorer" /> : !explorer.data ? <WorkspaceLoadingState label="Loading retained replay traces and semantic evidence…" /> : <div className="space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_28px_rgb(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex gap-3"><GitCompareArrows className="mt-0.5 h-5 w-5 text-blue-700 dark:text-blue-300" /><div><p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-700 dark:text-blue-300">Decision episode</p><h2 className="mt-1 font-mono text-xl font-semibold text-slate-950 dark:text-white">dec_pilot_001</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">A version change is not assumed safe because both traces are readable. Compare the semantic fields, explain every material change, then record an accountable conclusion.</p></div></div>
@@ -56,7 +63,7 @@ export default function ReplayExplorer() {
       </section>
 
       {comparison && baseline && candidate && <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_28px_rgb(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900">
-        <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800"><div className="flex items-center gap-3"><SearchCheck className="h-5 w-5 text-blue-700 dark:text-blue-300" /><div><p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-700 dark:text-blue-300">Side-by-side semantic diff</p><h2 className="mt-1 text-xl font-semibold text-slate-950 dark:text-white">Baseline → candidate trace</h2></div></div></div>
+        <div className="flex flex-col gap-4 border-b border-slate-200 px-6 py-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><SearchCheck className="h-5 w-5 text-blue-700 dark:text-blue-300" /><div><p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-700 dark:text-blue-300">Side-by-side semantic diff</p><h2 className="mt-1 text-xl font-semibold text-slate-950 dark:text-white">Baseline → candidate trace</h2></div></div><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" disabled={exportPackage.isPending} onClick={() => tenantId && exportPackage.mutate({ tenantId, decisionId: "dec_pilot_001", baselineTraceId: baselineTraceId ?? undefined, candidateTraceId: candidateTraceId ?? undefined })}><Download className="mr-2 h-3.5 w-3.5" />Export package</Button><Button size="sm" variant="outline" onClick={() => tenantId && window.location.assign(`/app/investigations?tenantId=${encodeURIComponent(tenantId)}&decisionId=dec_pilot_001&baselineTraceId=${encodeURIComponent(baselineTraceId ?? "")}&candidateTraceId=${encodeURIComponent(candidateTraceId ?? "")}`)}><ArrowUpRight className="mr-2 h-3.5 w-3.5" />Open case</Button></div></div>
         <div className="grid border-b border-slate-200 dark:border-slate-800 lg:grid-cols-[0.9fr_1.25fr_1.25fr]"><div className="bg-slate-50 p-5 text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:bg-slate-950 dark:text-slate-400">Field</div><div className="border-t border-slate-200 p-5 lg:border-l lg:border-t-0 dark:border-slate-800"><p className="font-mono text-sm font-semibold text-slate-950 dark:text-white">{baseline.stateVersion}</p><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{baseline.policyVersion} · {baseline.disposition}</p><p className="mt-2 break-all font-mono text-[10px] text-slate-400">{baseline.traceHash}</p></div><div className="border-t border-slate-200 p-5 lg:border-l lg:border-t-0 dark:border-slate-800"><p className="font-mono text-sm font-semibold text-slate-950 dark:text-white">{candidate.stateVersion}</p><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{candidate.policyVersion} · {candidate.disposition}</p><p className="mt-2 break-all font-mono text-[10px] text-slate-400">{candidate.traceHash}</p></div></div>
         {changedRows.length ? <div className="divide-y divide-slate-100 dark:divide-slate-800">{changedRows.map((diff: { path: string; baseline: string; candidate: string }) => <div key={diff.path} className="grid lg:grid-cols-[0.9fr_1.25fr_1.25fr]"><div className="bg-amber-50/50 px-5 py-4 font-mono text-xs font-semibold text-slate-700 dark:bg-amber-950/20 dark:text-amber-100">{diff.path}</div><div className="border-t border-slate-100 px-5 py-4 font-mono text-xs leading-5 text-slate-600 lg:border-l lg:border-t-0 dark:border-slate-800 dark:text-slate-300">{diff.baseline}</div><div className="border-t border-slate-100 bg-blue-50/35 px-5 py-4 font-mono text-xs leading-5 text-slate-900 lg:border-l lg:border-t-0 dark:border-slate-800 dark:bg-blue-950/15 dark:text-blue-100">{diff.candidate}</div></div>)}</div> : <div className="p-8 text-center text-sm text-emerald-700 dark:text-emerald-300">No retained semantic, version, or disposition difference exists for this selected pair.</div>}
       </section>}

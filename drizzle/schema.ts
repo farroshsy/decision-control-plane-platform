@@ -185,6 +185,29 @@ export const investigationRecords = mysqlTable(
   ]
 );
 
+export const investigationCases = mysqlTable(
+  "investigationCases",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    decisionId: varchar("decisionId", { length: 96 }).notNull(),
+    rolloutId: varchar("rolloutId", { length: 64 }),
+    status: mysqlEnum("status", ["open", "confirmed", "explained", "accepted", "rollback_required", "closed"]).default("open").notNull(),
+    approvalState: mysqlEnum("approvalState", ["not_required", "pending", "approved", "declined"]).default("pending").notNull(),
+    recommendedAction: varchar("recommendedAction", { length: 96 }).notNull(),
+    summary: varchar("summary", { length: 280 }).notNull(),
+    outcomeRationale: text("outcomeRationale"),
+    createdByUserId: int("createdByUserId").notNull(),
+    resolvedByUserId: int("resolvedByUserId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("investigation_cases_tenant_idx").on(table.tenantId, table.updatedAt),
+    index("investigation_cases_decision_idx").on(table.tenantId, table.decisionId, table.updatedAt),
+  ]
+);
+
 export const integrationApiKeys = mysqlTable(
   "integrationApiKeys",
   {
@@ -236,6 +259,24 @@ export const integrationDeliveries = mysqlTable(
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   table => [index("integration_deliveries_tenant_idx").on(table.tenantId, table.createdAt)]
+);
+
+export const integrationRetryAudits = mysqlTable(
+  "integrationRetryAudits",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    endpointId: varchar("endpointId", { length: 64 }).notNull(),
+    sourceDeliveryId: varchar("sourceDeliveryId", { length: 64 }).notNull(),
+    resultDeliveryId: varchar("resultDeliveryId", { length: 64 }).notNull(),
+    actionType: mysqlEnum("actionType", ["retry_simulation"]).notNull(),
+    payloadVersion: varchar("payloadVersion", { length: 32 }).notNull(),
+    resultStatus: mysqlEnum("resultStatus", ["simulated_delivered", "simulated_failed"]).notNull(),
+    operatorUserId: int("operatorUserId").notNull(),
+    detailJson: text("detailJson").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("integration_retry_audits_tenant_idx").on(table.tenantId, table.createdAt)]
 );
 
 export const mcpToolCalls = mysqlTable(

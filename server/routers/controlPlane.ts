@@ -24,6 +24,9 @@ export const controlPlaneRouter = router({
   migrationInvestigation: protectedProcedure
     .input(tenantInput.extend({ rolloutId: z.string().min(3).max(64).optional() }))
     .query(({ ctx, input }) => expansion.migrationInvestigation(ctx.user.id, input.tenantId, input.rolloutId)),
+  investigationCase: protectedProcedure
+    .input(tenantInput.extend({ caseId: z.string().min(3).max(64).optional(), decisionId: z.string().min(3).max(96).optional(), rolloutId: z.string().min(3).max(64).optional() }))
+    .query(({ ctx, input }) => expansion.investigationCaseDetail(ctx.user.id, input.tenantId, input)),
   recordReplayAssertion: protectedProcedure
     .input(tenantInput.extend({ decisionId: z.string().min(3).max(96), baselineTraceId: z.string().min(3).max(64), candidateTraceId: z.string().min(3).max(64), conclusion: z.enum(["equivalent", "not_equivalent", "needs_review"]), rationale: z.string().min(12).max(1_000) }))
     .mutation(({ ctx, input }) => expansion.recordReplayAssertion(ctx.user.id, input.tenantId, input)),
@@ -33,6 +36,12 @@ export const controlPlaneRouter = router({
   recordRollbackRecommendation: protectedProcedure
     .input(tenantInput.extend({ rolloutId: z.string().min(3).max(64), rationale: z.string().min(12).max(1_000) }))
     .mutation(({ ctx, input }) => expansion.recordRollbackRecommendation(ctx.user.id, input.tenantId, input)),
+  updateInvestigationOutcome: protectedProcedure
+    .input(tenantInput.extend({ caseId: z.string().min(3).max(64), status: z.enum(["confirmed", "explained", "accepted", "rollback_required"]), rationale: z.string().min(12).max(1_000) }))
+    .mutation(({ ctx, input }) => expansion.updateInvestigationOutcome(ctx.user.id, input.tenantId, input)),
+  exportReplayInvestigation: protectedProcedure
+    .input(tenantInput.extend({ decisionId: z.string().min(3).max(96), baselineTraceId: z.string().min(3).max(64).optional(), candidateTraceId: z.string().min(3).max(64).optional() }))
+    .mutation(({ ctx, input }) => expansion.exportReplayInvestigation(ctx.user.id, input.tenantId, input)),
   createPilotApiKey: protectedProcedure
     .input(tenantInput.extend({ label: z.string().min(3).max(120), scope: z.enum(["read_only", "replay_operator", "rollout_operator"]) }))
     .mutation(({ ctx, input }) => expansion.createPilotApiKey(ctx.user.id, input.tenantId, input.label, input.scope)),
@@ -42,6 +51,9 @@ export const controlPlaneRouter = router({
   simulateWebhookDelivery: protectedProcedure
     .input(tenantInput.extend({ endpointId: z.string().min(3).max(64), eventType: z.string().min(3).max(96) }))
     .mutation(({ ctx, input }) => expansion.simulateWebhookDelivery(ctx.user.id, input.tenantId, input.endpointId, input.eventType)),
+  retrySimulatedWebhookDelivery: protectedProcedure
+    .input(tenantInput.extend({ deliveryId: z.string().min(3).max(64), rationale: z.string().min(12).max(1_000) }))
+    .mutation(({ ctx, input }) => expansion.retrySimulatedWebhookDelivery(ctx.user.id, input.tenantId, input.deliveryId, input.rationale)),
   createPilotWebhookEndpoint: protectedProcedure
     .input(tenantInput.extend({ name: z.string().min(3).max(140), description: z.string().min(12).max(1_000), eventTypes: z.array(z.string().min(3).max(96)).min(1).max(12) }))
     .mutation(({ ctx, input }) => expansion.createPilotWebhookEndpoint(ctx.user.id, input.tenantId, input)),
