@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Activity, BookOpenText, DatabaseZap, Gauge, GitCompareArrows, LayoutDashboard, LogOut, PanelLeft, ShieldCheck } from "lucide-react";
+import { Activity, BookOpenText, Bot, DatabaseZap, Gauge, GitCompareArrows, LayoutDashboard, LogOut, Moon, Network, PanelLeft, ShieldCheck, Sun, Waypoints } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -32,7 +33,12 @@ const menuItems = [
   { icon: GitCompareArrows, label: "State evolution", path: "/app/state" },
   { icon: DatabaseZap, label: "Rollouts", path: "/app/rollouts" },
   { icon: Gauge, label: "Operations", path: "/app/operations" },
+  { icon: Waypoints, label: "Migration timeline", path: "/app/migration" },
+  { icon: GitCompareArrows, label: "Replay explorer", path: "/app/replay" },
+  { icon: Activity, label: "Version lab", path: "/app/versions" },
   { icon: ShieldCheck, label: "Audit & replay", path: "/app/evidence" },
+  { icon: Network, label: "Integrations", path: "/app/integrations" },
+  { icon: Bot, label: "MCP pilot", path: "/app/integrations#mcp" },
   { icon: BookOpenText, label: "Developer docs", path: "/app/docs" },
 ];
 
@@ -109,6 +115,7 @@ function DashboardLayoutContent({
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -204,6 +211,10 @@ function DashboardLayoutContent({
           </SidebarContent>
 
           <SidebarFooter className="p-3">
+            <button onClick={toggleTheme} className="mb-3 flex h-9 w-full items-center gap-3 rounded-lg px-2 text-sm text-muted-foreground hover:bg-accent/70 group-data-[collapsible=icon]:justify-center" aria-label="Toggle color theme">
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              <span className="group-data-[collapsible=icon]:hidden">{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+            </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -259,7 +270,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-4 transition-colors duration-200">{children}</main>
       </SidebarInset>
     </>
   );

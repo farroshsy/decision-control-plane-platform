@@ -15,6 +15,13 @@
       "when": 1787624865251,
       "tag": "0001_panoramic_warstar",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787626819434,
+      "tag": "0002_cultured_amphibian",
+      "breakpoints": true
     }
   ]
 }

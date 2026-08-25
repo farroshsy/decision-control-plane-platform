@@ -146,6 +146,107 @@ export const telemetrySnapshots = mysqlTable(
   table => [index("telemetry_snapshots_tenant_idx").on(table.tenantId, table.recordedAt)]
 );
 
+export const replayTraces = mysqlTable(
+  "replayTraces",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    decisionId: varchar("decisionId", { length: 96 }).notNull(),
+    manifestId: varchar("manifestId", { length: 64 }).notNull(),
+    policyVersion: varchar("policyVersion", { length: 64 }).notNull(),
+    stateVersion: varchar("stateVersion", { length: 64 }).notNull(),
+    disposition: mysqlEnum("disposition", ["allowed", "held", "rejected"]).notNull(),
+    replayStatus: mysqlEnum("replayStatus", ["matched", "diverged", "not_run"]).notNull(),
+    traceHash: varchar("traceHash", { length: 128 }).notNull(),
+    traceJson: text("traceJson").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("replay_traces_tenant_idx").on(table.tenantId, table.decisionId, table.createdAt)]
+);
+
+export const integrationApiKeys = mysqlTable(
+  "integrationApiKeys",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    label: varchar("label", { length: 120 }).notNull(),
+    tokenPrefix: varchar("tokenPrefix", { length: 24 }).notNull(),
+    secretHash: varchar("secretHash", { length: 128 }).notNull(),
+    scope: mysqlEnum("scope", ["read_only", "replay_operator", "rollout_operator"]).default("read_only").notNull(),
+    status: mysqlEnum("status", ["active", "revoked"]).default("active").notNull(),
+    createdByUserId: int("createdByUserId").notNull(),
+    lastUsedAt: timestamp("lastUsedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    uniqueIndex("integration_api_keys_hash_unique").on(table.secretHash),
+    index("integration_api_keys_tenant_idx").on(table.tenantId, table.createdAt),
+  ]
+);
+
+export const integrationEndpoints = mysqlTable(
+  "integrationEndpoints",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    name: varchar("name", { length: 140 }).notNull(),
+    kind: mysqlEnum("kind", ["webhook", "mcp", "sdk", "cli", "audit_export"]).notNull(),
+    mode: mysqlEnum("mode", ["pilot_simulated", "session_authenticated", "api_key_authenticated"]).default("pilot_simulated").notNull(),
+    status: mysqlEnum("status", ["draft", "pilot_ready", "paused"]).default("draft").notNull(),
+    description: text("description").notNull(),
+    configJson: text("configJson").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("integration_endpoints_tenant_idx").on(table.tenantId, table.createdAt)]
+);
+
+export const integrationDeliveries = mysqlTable(
+  "integrationDeliveries",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    endpointId: varchar("endpointId", { length: 64 }).notNull(),
+    eventType: varchar("eventType", { length: 96 }).notNull(),
+    status: mysqlEnum("status", ["queued", "simulated_delivered", "simulated_failed"]).default("queued").notNull(),
+    attemptCount: int("attemptCount").default(0).notNull(),
+    payloadPreview: text("payloadPreview").notNull(),
+    resultSummary: text("resultSummary").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("integration_deliveries_tenant_idx").on(table.tenantId, table.createdAt)]
+);
+
+export const mcpToolCalls = mysqlTable(
+  "mcpToolCalls",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    apiKeyId: varchar("apiKeyId", { length: 64 }),
+    toolName: varchar("toolName", { length: 96 }).notNull(),
+    inputJson: text("inputJson").notNull(),
+    status: mysqlEnum("status", ["succeeded", "rejected", "simulated"]).notNull(),
+    resultSummary: text("resultSummary").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("mcp_tool_calls_tenant_idx").on(table.tenantId, table.createdAt)]
+);
+
+export const auditExports = mysqlTable(
+  "auditExports",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    requestedByUserId: int("requestedByUserId").notNull(),
+    format: mysqlEnum("format", ["json", "csv"]).notNull(),
+    scope: varchar("scope", { length: 96 }).notNull(),
+    status: mysqlEnum("status", ["prepared", "downloaded"]).default("prepared").notNull(),
+    summary: text("summary").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("audit_exports_tenant_idx").on(table.tenantId, table.createdAt)]
+);
+
 export const decisionEvidence = mysqlTable(
   "decisionEvidence",
   {
@@ -197,4 +298,3 @@ export const tenantNotifications = mysqlTable(
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
-

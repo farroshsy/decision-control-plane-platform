@@ -12,6 +12,10 @@ import StateEvolution from "./pages/StateEvolution";
 import Rollouts from "./pages/Rollouts";
 import Operations from "./pages/Operations";
 import Evidence from "./pages/Evidence";
+import MigrationTimeline from "./pages/MigrationTimeline";
+import ReplayExplorer from "./pages/ReplayExplorer";
+import VersionLab from "./pages/VersionLab";
+import Integrations from "./pages/Integrations";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -23,7 +27,11 @@ function Router() {
       <Route path={"/app/state"}><DashboardLayout><StateEvolution /></DashboardLayout></Route>
       <Route path={"/app/rollouts"}><DashboardLayout><Rollouts /></DashboardLayout></Route>
       <Route path={"/app/operations"}><DashboardLayout><Operations /></DashboardLayout></Route>
+      <Route path={"/app/migration"}><DashboardLayout><MigrationTimeline /></DashboardLayout></Route>
+      <Route path={"/app/replay"}><DashboardLayout><ReplayExplorer /></DashboardLayout></Route>
+      <Route path={"/app/versions"}><DashboardLayout><VersionLab /></DashboardLayout></Route>
       <Route path={"/app/evidence"}><DashboardLayout><Evidence /></DashboardLayout></Route>
+      <Route path={"/app/integrations"}><DashboardLayout><Integrations /></DashboardLayout></Route>
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -41,7 +49,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider
         defaultTheme="light"
-        // switchable
+        switchable
       >
         <TooltipProvider>
           <Toaster />

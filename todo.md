@@ -11,8 +11,21 @@
 - [x] Add end-to-end architecture and project-summary presentation content for the platform and pilot deployment path.
 - [x] Write and run Vitest coverage for control-plane safety rules and tenant scoping.
 - [x] Verify responsive user experience and capture final UI screenshots.
-- [ ] Save a release checkpoint after all completed work is verified.
+- [x] Save a release checkpoint after all completed work is verified.
 - [x] Add replay verification controls and explicit rollback phase/reason visibility directly into the Decision-state evolution workspace.
 - [x] Expand the developer portal with a concrete schema reference surface and keep the portal route-gated inside the pilot application.
 - [x] Add Vitest coverage for store-level tenant notification visibility and role-gated control-plane mutation permissions.
 - [x] Add direct store-level tests for workspace notification filtering and cross-tenant or unauthorized control-plane mutations.
+- [x] Add tenant-scoped operational telemetry history and migration health data for real-time-style visualization and live status updates.
+- [x] Build a visual operational dashboard for tenant safety telemetry, rollout progression, replay verification, and migration health.
+- [x] Build a Replay Explorer with trace inspection, cross-version replay comparison, semantic-difference analysis, and replay-equivalence validation.
+- [x] Build a Migration Timeline for expand, dual-write, backfill, verification, rollout, rollback, and tenant migration progress.
+- [x] Add policy, schema, and state version comparison with automated compatibility and safety verification.
+- [x] Enhance the authenticated developer portal with interactive API documentation, executable examples, architecture diagrams, schema exploration, and pilot onboarding guides.
+- [x] Add tenant-scoped authenticated integration APIs, SDK and CLI starter surfaces, simulated webhook/event subscription records, and audit exports.
+- [x] Add an MCP server foundation exposing tenant inspection, rollout control, replay verification, migration history, and operational telemetry for AI-native tools.
+- [x] Finish dark-mode styling and contrast support for remaining authenticated pages and run focused accessibility checks across light and dark modes.
+- [x] Browser-verify tenant-scoped simulated webhook subscription controls, audit-export surfaces, and bounded MCP integration workflows after the integration changes.
+- [x] Add release notes that explicitly frame the expansion as Observe → Integrate → Automate and link each delivered pilot surface.
+- [ ] Save a post-expansion checkpoint after all tests, browser checks, and release notes are complete.
+- [x] Keep every integration surface explicitly within the pilot foundation boundary: simulated delivery history, no claims of production webhook guarantees, long-lived MCP connections, or automated infrastructure control.
