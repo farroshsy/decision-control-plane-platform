@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canCreateCommentWithVisibility, canRedactComment, commentVisibleToRole, reminderEvaluationHour, shouldCreateAssignedInvestigatorReminder, teamViewVisibleToRole } from "./operatorEnablementPolicy";
+import { canCreateCommentWithVisibility, canRedactComment, commentVisibleToRole, reminderEvaluationHour, shouldCreateAssignedInvestigatorReminder, teamViewVisibleToRole, teamViewVisibleToTenantMember } from "./operatorEnablementPolicy";
 
 describe("operator enablement collaboration policy", () => {
   it("enforces role-visible comment scopes and controlled redaction authority", () => {
@@ -14,6 +14,17 @@ describe("operator enablement collaboration policy", () => {
   it("enforces an explicit team-view access policy", () => {
     expect(teamViewVisibleToRole(["platform_operator", "compliance_operator"], "compliance_operator")).toBe(true);
     expect(teamViewVisibleToRole(["platform_operator", "compliance_operator"], "customer_operator")).toBe(false);
+  });
+
+  it("enforces shared-queue policy separately for a second tenant member and never crosses tenant scope", () => {
+    const sharedQueue = { viewTenantId: "tenant_alpha", allowedRoles: ["platform_operator", "compliance_operator"] as const };
+    const firstTenantMember = { memberTenantId: "tenant_alpha", memberRole: "platform_operator" as const };
+    const secondTenantMember = { memberTenantId: "tenant_alpha", memberRole: "customer_operator" as const };
+    const crossTenantComplianceMember = { memberTenantId: "tenant_bravo", memberRole: "compliance_operator" as const };
+
+    expect(teamViewVisibleToTenantMember({ ...sharedQueue, ...firstTenantMember })).toBe(true);
+    expect(teamViewVisibleToTenantMember({ ...sharedQueue, ...secondTenantMember })).toBe(false);
+    expect(teamViewVisibleToTenantMember({ ...sharedQueue, ...crossTenantComplianceMember })).toBe(false);
   });
 
   it("creates hourly in-app reminder work only for named assignees whose targets require attention", () => {

@@ -38,6 +38,9 @@ export const controlPlaneRouter = router({
       sort: z.enum(["updated_desc", "due_asc", "service_level_asc", "priority_desc", "status_asc"]).optional(),
     }))
     .query(({ ctx, input }) => expansion.investigationCaseQueue(ctx.user.id, input.tenantId, input)),
+  personalSlaReminderInbox: protectedProcedure
+    .input(tenantInput.extend({ serviceLevelState: z.enum(["due_soon", "overdue"]).optional() }))
+    .query(({ ctx, input }) => expansion.personalSlaReminderInbox(ctx.user.id, input.tenantId, input)),
   investigationCaseAssignees: protectedProcedure
     .input(tenantInput)
     .query(({ ctx, input }) => expansion.investigationCaseAssignees(ctx.user.id, input.tenantId)),

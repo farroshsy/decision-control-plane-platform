@@ -76,3 +76,10 @@
 - [x] Add hourly assigned-investigator in-app SLA reminder configuration with explicit operational ownership, audit records, and no external-delivery claim.
 - [x] Build an in-application utilization guide with contextual help, recommended next actions, workflow checklists, and guided paths to Replay, Migration, Investigations, Integrations, and Documentation.
 - [x] Validate, document, and checkpoint the Operator Enablement and governed collaboration release.
+- [x] Add a compact tenant-scoped personal SLA reminder inbox filter to the operator dashboard.
+- [x] Add clear redaction-status badges in shared team queue-facing collaboration UI.
+- [x] Add second-tenant-member role-matrix test coverage that proves shared queue policies allow and deny access correctly.
+- [x] Validate, document, and checkpoint the personal reminder and shared-queue clarity enhancement.
+- [x] Add explicit failed-query feedback to the personal SLA reminder inbox so an unavailable inbox is not presented as zero pending records.
+- [x] Re-run validation and save the personal reminder and shared-queue clarity enhancement checkpoint.
+- [x] Save the final checkpoint for the personal reminder inbox and shared-queue clarity enhancement.

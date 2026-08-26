@@ -21,6 +21,15 @@ export function teamViewVisibleToRole(allowedRoles: TenantOperatorRole[], role: 
   return allowedRoles.includes(role);
 }
 
+export function teamViewVisibleToTenantMember(input: {
+  viewTenantId: string;
+  memberTenantId: string;
+  allowedRoles: TenantOperatorRole[];
+  memberRole: TenantOperatorRole;
+}): boolean {
+  return input.viewTenantId === input.memberTenantId && teamViewVisibleToRole(input.allowedRoles, input.memberRole);
+}
+
 export function reminderEvaluationHour(now: Date): string {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours())).toISOString();
 }

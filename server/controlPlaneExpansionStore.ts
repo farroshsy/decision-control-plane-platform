@@ -42,7 +42,7 @@ import { assignmentActivity, attachmentActivity, commentActivity, escalationActi
 import { storagePut } from "./storage";
 import { createHeartbeatJob, deleteHeartbeatJob } from "./_core/heartbeat";
 import { COOKIE_NAME } from "../shared/const";
-import { canCreateCommentWithVisibility, canRedactComment, commentVisibleToRole, reminderEvaluationHour, shouldCreateAssignedInvestigatorReminder, teamViewVisibleToRole, type CommentVisibility, type TenantOperatorRole } from "./operatorEnablementPolicy";
+import { canCreateCommentWithVisibility, canRedactComment, commentVisibleToRole, reminderEvaluationHour, shouldCreateAssignedInvestigatorReminder, teamViewVisibleToTenantMember, type CommentVisibility, type TenantOperatorRole } from "./operatorEnablementPolicy";
 
 type IntegrationScope = "read_only" | "replay_operator" | "rollout_operator";
 type ApiKeyRow = typeof integrationApiKeys.$inferSelect;
@@ -622,21 +622,31 @@ export async function investigationCaseQueue(userId: number, tenantId: string, i
   assignments.forEach(assignment => { if (!latestAssignment.has(assignment.caseId)) latestAssignment.set(assignment.caseId, assignment); });
   const activeEscalations = new Map<string, typeof escalations[number][]>();
   escalations.filter(escalation => escalation.status === "queued" || escalation.status === "acknowledged").forEach(escalation => activeEscalations.set(escalation.caseId, [...(activeEscalations.get(escalation.caseId) ?? []), escalation]));
-  const commentsByCase = new Map<string, string[]>();
+  const commentSummaryByCase = new Map<string, { activeBodies: string[]; visibleCommentCount: number; redactedCommentCount: number }>();
   comments
-    .filter(comment => comment.redactionState === "active" && commentVisibleToRole(comment.visibility as CommentVisibility, membership.role as TenantOperatorRole))
-    .forEach(comment => commentsByCase.set(comment.caseId, [...(commentsByCase.get(comment.caseId) ?? []), comment.body]));
+    .filter(comment => commentVisibleToRole(comment.visibility as CommentVisibility, membership.role as TenantOperatorRole))
+    .forEach(comment => {
+      const existing = commentSummaryByCase.get(comment.caseId) ?? { activeBodies: [], visibleCommentCount: 0, redactedCommentCount: 0 };
+      commentSummaryByCase.set(comment.caseId, {
+        activeBodies: comment.redactionState === "active" ? [...existing.activeBodies, comment.body] : existing.activeBodies,
+        visibleCommentCount: existing.visibleCommentCount + 1,
+        redactedCommentCount: existing.redactedCommentCount + (comment.redactionState === "redacted" ? 1 : 0),
+      });
+    });
   const rows = cases.map(investigationCase => {
     const assignment = latestAssignment.get(investigationCase.id) ?? null;
     const active = activeEscalations.get(investigationCase.id) ?? [];
     const targets = [assignment?.serviceLevelTargetAt, ...active.map(escalation => escalation.serviceLevelTargetAt)].filter((target): target is Date => Boolean(target));
     const serviceLevelTargetAt = targets.sort((left, right) => left.getTime() - right.getTime())[0] ?? null;
+    const commentSummary = commentSummaryByCase.get(investigationCase.id) ?? { activeBodies: [], visibleCommentCount: 0, redactedCommentCount: 0 };
     return {
       ...investigationCase,
       latestAssignment: assignment ? { ...assignment, serviceLevel: serviceLevelPosture(assignment.serviceLevelTargetAt) } : null,
       activeEscalations: active.map(escalation => ({ ...escalation, serviceLevel: serviceLevelPosture(escalation.serviceLevelTargetAt) })),
       serviceLevel: serviceLevelPosture(serviceLevelTargetAt),
-      searchText: [investigationCase.id, investigationCase.decisionId, investigationCase.summary, investigationCase.recommendedAction, investigationCase.status, assignment?.assignedRole, ...commentsByCase.get(investigationCase.id) ?? []].filter(Boolean).join(" ").toLowerCase(),
+      visibleCommentCount: commentSummary.visibleCommentCount,
+      redactedCommentCount: commentSummary.redactedCommentCount,
+      searchText: [investigationCase.id, investigationCase.decisionId, investigationCase.summary, investigationCase.recommendedAction, investigationCase.status, assignment?.assignedRole, ...commentSummary.activeBodies].filter(Boolean).join(" ").toLowerCase(),
     };
   });
   const sorted = filterAndSortLifecycleQueue(rows, input);
@@ -655,9 +665,32 @@ export async function investigationCaseQueue(userId: number, tenantId: string, i
     savedViews: savedViews.map(view => ({ ...view, filters: safelyParse(view.filterJson) })),
     teamViews: teamViews
       .map(view => ({ ...view, filters: safelyParse(view.filterJson), allowedRoles: parseTeamRoles(view.allowedRolesJson), ownership: { createdByUserId: view.createdByUserId, accessPolicy: "explicit_allowed_tenant_roles" as const } }))
-      .filter(view => teamViewVisibleToRole(view.allowedRoles, membership.role as TenantOperatorRole)),
+      .filter(view => teamViewVisibleToTenantMember({ viewTenantId: view.tenantId, memberTenantId: tenantId, allowedRoles: view.allowedRoles, memberRole: membership.role as TenantOperatorRole })),
     workload: Object.values(workload),
     appliedFilters: input,
+    pilotOnly: true,
+  };
+}
+
+export async function personalSlaReminderInbox(userId: number, tenantId: string, input: { serviceLevelState?: "due_soon" | "overdue" } = {}) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
+  const db = await dbOrThrow();
+  const [reminders, cases] = await Promise.all([
+    db.select().from(investigationSlaReminders).where(and(eq(investigationSlaReminders.tenantId, tenantId), eq(investigationSlaReminders.recipientUserId, userId), eq(investigationSlaReminders.status, "open"))).orderBy(desc(investigationSlaReminders.dueAt)).limit(50),
+    db.select().from(investigationCases).where(eq(investigationCases.tenantId, tenantId)).orderBy(desc(investigationCases.updatedAt)).limit(100),
+  ]);
+  const casesById = new Map(cases.map(investigationCase => [investigationCase.id, investigationCase]));
+  const filtered = input.serviceLevelState ? reminders.filter(reminder => reminder.serviceLevelState === input.serviceLevelState) : reminders;
+  return {
+    pendingCount: reminders.length,
+    reminders: filtered.map(reminder => {
+      const investigationCase = casesById.get(reminder.caseId);
+      return {
+        ...reminder,
+        case: investigationCase ? { id: investigationCase.id, decisionId: investigationCase.decisionId, summary: investigationCase.summary, status: investigationCase.status } : null,
+      };
+    }),
+    delivery: "in_app_record_only" as const,
     pilotOnly: true,
   };
 }
