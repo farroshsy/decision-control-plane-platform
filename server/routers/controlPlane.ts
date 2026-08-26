@@ -27,6 +27,18 @@ export const controlPlaneRouter = router({
   investigationCase: protectedProcedure
     .input(tenantInput.extend({ caseId: z.string().min(3).max(64).optional(), decisionId: z.string().min(3).max(96).optional(), rolloutId: z.string().min(3).max(64).optional() }))
     .query(({ ctx, input }) => expansion.investigationCaseDetail(ctx.user.id, input.tenantId, input)),
+  investigationCaseQueue: protectedProcedure
+    .input(tenantInput)
+    .query(({ ctx, input }) => expansion.investigationCaseQueue(ctx.user.id, input.tenantId)),
+  assignInvestigationCase: protectedProcedure
+    .input(tenantInput.extend({ caseId: z.string().min(3).max(64), assignedRole: z.enum(["platform_operator", "compliance_operator", "customer_operator"]), rationale: z.string().min(12).max(1_000) }))
+    .mutation(({ ctx, input }) => expansion.assignInvestigationCase(ctx.user.id, input.tenantId, input)),
+  escalateInvestigationCase: protectedProcedure
+    .input(tenantInput.extend({ caseId: z.string().min(3).max(64), queue: z.enum(["compliance_review", "platform_safety", "customer_exception"]), priority: z.enum(["standard", "elevated", "critical"]), reason: z.string().min(12).max(1_000) }))
+    .mutation(({ ctx, input }) => expansion.escalateInvestigationCase(ctx.user.id, input.tenantId, input)),
+  acknowledgeInvestigationEscalation: protectedProcedure
+    .input(tenantInput.extend({ escalationId: z.string().min(3).max(64) }))
+    .mutation(({ ctx, input }) => expansion.acknowledgeInvestigationEscalation(ctx.user.id, input.tenantId, input.escalationId)),
   recordReplayAssertion: protectedProcedure
     .input(tenantInput.extend({ decisionId: z.string().min(3).max(96), baselineTraceId: z.string().min(3).max(64), candidateTraceId: z.string().min(3).max(64), conclusion: z.enum(["equivalent", "not_equivalent", "needs_review"]), rationale: z.string().min(12).max(1_000) }))
     .mutation(({ ctx, input }) => expansion.recordReplayAssertion(ctx.user.id, input.tenantId, input)),
@@ -42,6 +54,9 @@ export const controlPlaneRouter = router({
   exportReplayInvestigation: protectedProcedure
     .input(tenantInput.extend({ decisionId: z.string().min(3).max(96), baselineTraceId: z.string().min(3).max(64).optional(), candidateTraceId: z.string().min(3).max(64).optional() }))
     .mutation(({ ctx, input }) => expansion.exportReplayInvestigation(ctx.user.id, input.tenantId, input)),
+  verifyEvidencePackageManifest: protectedProcedure
+    .input(tenantInput.extend({ manifestId: z.string().min(3).max(64) }))
+    .query(({ ctx, input }) => expansion.verifyEvidencePackageManifest(ctx.user.id, input.tenantId, input.manifestId)),
   createPilotApiKey: protectedProcedure
     .input(tenantInput.extend({ label: z.string().min(3).max(120), scope: z.enum(["read_only", "replay_operator", "rollout_operator"]) }))
     .mutation(({ ctx, input }) => expansion.createPilotApiKey(ctx.user.id, input.tenantId, input.label, input.scope)),

@@ -208,6 +208,92 @@ export const investigationCases = mysqlTable(
   ]
 );
 
+export const investigationCaseAssignments = mysqlTable(
+  "investigationCaseAssignments",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    caseId: varchar("caseId", { length: 64 }).notNull(),
+    assignedRole: mysqlEnum("assignedRole", ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]).notNull(),
+    assignedToUserId: int("assignedToUserId"),
+    assignedByUserId: int("assignedByUserId").notNull(),
+    status: mysqlEnum("status", ["assigned", "accepted", "reassigned", "closed"]).default("assigned").notNull(),
+    rationale: text("rationale").notNull(),
+    assignedAt: timestamp("assignedAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("case_assignments_tenant_idx").on(table.tenantId, table.updatedAt),
+    index("case_assignments_case_idx").on(table.tenantId, table.caseId, table.updatedAt),
+  ]
+);
+
+export const investigationEscalations = mysqlTable(
+  "investigationEscalations",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    caseId: varchar("caseId", { length: 64 }).notNull(),
+    queue: mysqlEnum("queue", ["compliance_review", "platform_safety", "customer_exception"]).notNull(),
+    priority: mysqlEnum("priority", ["standard", "elevated", "critical"]).default("standard").notNull(),
+    status: mysqlEnum("status", ["queued", "acknowledged", "resolved", "cancelled"]).default("queued").notNull(),
+    reason: text("reason").notNull(),
+    createdByUserId: int("createdByUserId").notNull(),
+    acknowledgedByUserId: int("acknowledgedByUserId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("investigation_escalations_tenant_idx").on(table.tenantId, table.updatedAt),
+    index("investigation_escalations_queue_idx").on(table.tenantId, table.queue, table.status, table.updatedAt),
+    index("investigation_escalations_case_idx").on(table.tenantId, table.caseId, table.updatedAt),
+  ]
+);
+
+export const evidenceRetentionPolicies = mysqlTable(
+  "evidenceRetentionPolicies",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    scope: mysqlEnum("scope", ["replay_investigation_package"]).default("replay_investigation_package").notNull(),
+    retentionDays: int("retentionDays").notNull(),
+    holdStatus: mysqlEnum("holdStatus", ["not_on_hold", "legal_hold"]).default("not_on_hold").notNull(),
+    status: mysqlEnum("status", ["active", "superseded", "suspended"]).default("active").notNull(),
+    summary: text("summary").notNull(),
+    createdByUserId: int("createdByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("evidence_retention_policies_tenant_idx").on(table.tenantId, table.status, table.updatedAt),
+  ]
+);
+
+export const evidencePackageManifests = mysqlTable(
+  "evidencePackageManifests",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    decisionId: varchar("decisionId", { length: 96 }).notNull(),
+    caseId: varchar("caseId", { length: 64 }).notNull(),
+    auditExportId: varchar("auditExportId", { length: 64 }).notNull(),
+    retentionPolicyId: varchar("retentionPolicyId", { length: 64 }).notNull(),
+    packageHash: varchar("packageHash", { length: 128 }).notNull(),
+    signature: varchar("signature", { length: 256 }).notNull(),
+    signatureAlgorithm: varchar("signatureAlgorithm", { length: 64 }).notNull(),
+    canonicalization: varchar("canonicalization", { length: 64 }).notNull(),
+    manifestJson: text("manifestJson").notNull(),
+    retentionUntil: timestamp("retentionUntil").notNull(),
+    status: mysqlEnum("status", ["active", "expired", "on_hold"]).default("active").notNull(),
+    createdByUserId: int("createdByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("evidence_package_manifests_tenant_idx").on(table.tenantId, table.createdAt),
+    index("evidence_package_manifests_case_idx").on(table.tenantId, table.caseId, table.createdAt),
+  ]
+);
+
 export const integrationApiKeys = mysqlTable(
   "integrationApiKeys",
   {
