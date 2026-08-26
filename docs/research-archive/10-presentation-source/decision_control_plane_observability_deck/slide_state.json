@@ -1,0 +1,72 @@
+{
+  "project_info": {
+    "title": "Real-Time Observability and Telemetry",
+    "created": 1787623825.445,
+    "last_updated": 1787624006.033,
+    "total_slides": 6
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "operator_questions",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "architecture",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "dashboard",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "chaos",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "decision",
+      "state": "edited",
+      "pageNum": 6
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Real-Time Observability and Telemetry",
+      "summary": "An operational control surface to guarantee decision safety."
+    },
+    {
+      "id": "operator_questions",
+      "title": "The five critical operator questions",
+      "summary": "What operators need to know instantly during a degradation."
+    },
+    {
+      "id": "architecture",
+      "title": "The telemetry architecture",
+      "summary": "Consistent trace propagation from request to audit without leaking sensitive data."
+    },
+    {
+      "id": "dashboard",
+      "title": "The operator dashboard layout",
+      "summary": "A six-row layout prioritizing safety metrics over raw throughput."
+    },
+    {
+      "id": "chaos",
+      "title": "Alerting and chaos engineering",
+      "summary": "Proving that alerts route correctly and dashboards reflect reality under stress."
+    },
+    {
+      "id": "decision",
+      "title": "The executive takeaway",
+      "summary": "Measuring semantic safety rather than inferring health from infrastructure."
+    }
+  ]
+}

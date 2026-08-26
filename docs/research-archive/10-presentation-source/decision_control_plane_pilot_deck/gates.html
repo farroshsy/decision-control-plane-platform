@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 48px 72px 0 72px; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 42px; line-height: 1.08; margin: 12px 0 0 0; letter-spacing: -1px; }
+    .thesis { font-size: 20px; color: #475569; margin-top: 12px; max-width: 1000px; }
+    
+    .gates-grid { display: flex; flex-wrap: wrap; justify-content: space-between; margin-top: 16px; }
+    .gate { width: 47%; border-top: 3px solid #0A1128; padding-top: 8px; margin-bottom: 16px; }
+    .gate-title { font-size: 22px; font-weight: 800; color: #D90429; margin-bottom: 4px; }
+    .gate-desc { font-size: 18px; line-height: 1.4; color: #334155; }
+    
+    .footer { margin-top: auto; border-top: 1px solid #CBD5E1; padding-top: 8px; padding-bottom: 8px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="kicker">06 / Validation gates</div>
+    <h1>Hard gates before authority</h1>
+    <div class="thesis">Authority changes only after these hard gates pass. We scale on evidence, not on architectural theory.</div>
+    
+    <div class="gates-grid">
+      <div class="gate">
+        <div class="gate-title">01. Correctness</div>
+        <div class="gate-desc">No unexplained critical decision divergence in the approved replay corpus.</div>
+      </div>
+      <div class="gate">
+        <div class="gate-title">02. Determinism</div>
+        <div class="gate-desc">&ge;99.99% exact replay equivalence for pinned cases; all exceptions classified.</div>
+      </div>
+      <div class="gate">
+        <div class="gate-title">03. Fencing</div>
+        <div class="gate-desc">Zero stale-epoch writes accepted in partition drills.</div>
+      </div>
+      <div class="gate">
+        <div class="gate-title">04. Actions</div>
+        <div class="gate-desc">Zero duplicate side effects; all retries reconcile to one logical command.</div>
+      </div>
+      <div class="gate">
+        <div class="gate-title">05. RPO</div>
+        <div class="gate-desc">Allow-like actions held or rejected when the tenant RPO budget is exceeded.</div>
+      </div>
+      <div class="gate">
+        <div class="gate-title">06. Isolation</div>
+        <div class="gate-desc">Zero cross-tenant read or write findings during negative testing.</div>
+      </div>
+      <div class="gate">
+        <div class="gate-title">07. Operations</div>
+        <div class="gate-desc">A non-authoring operator can execute the runbook successfully and meet signed RTO targets.</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Decision Control Plane · Pilot Runbook</div>
+      <div>06</div>
+    </div>
+  </div>
+</body>
+</html>

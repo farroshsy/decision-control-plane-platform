@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The kernel stays small and stable</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .slide-container { width: 1280px; min-height: 720px; background: #ffffff; color: #0A1128; font-family: Arial, Helvetica, sans-serif; padding: 56px 62px 0; }
+  .eyebrow { font: 700 12px "Courier New", monospace; letter-spacing: 2px; color: #00509E; text-transform: uppercase; margin-bottom: 16px; }
+  h1 { font-size: 43px; line-height: 1.04; letter-spacing: -1.5px; margin: 0 0 40px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+  .path-box { border: 1px solid #0A1128; border-top: 8px solid #00509E; padding: 35px 40px; min-height: 380px; }
+  .path-box.adapter { border-top-color: #D90429; }
+  .path-title { font-size: 32px; font-weight: 700; margin-bottom: 24px; letter-spacing: -0.5px; }
+  .list { list-style: none; padding: 0; margin: 0; }
+  .list li { font: 400 18px/1.5 "Courier New", monospace; color: #334155; margin-bottom: 20px; padding-left: 24px; position: relative; }
+  .list li::before { content: "■"; color: #0A1128; position: absolute; left: 0; top: 2px; font-size: 12px; }
+  /* Reduced top gap to pull bottom bar up and eliminate overflow */
+  .bottom-bar { margin-top: 6px; border-top: 1px solid #0A1128; padding-top: 20px; font: 700 22px/1.3 Arial, Helvetica, sans-serif; color: #0A1128; }
+  .bottom-bar span { color: #D90429; font-family: "Courier New", monospace; text-transform: uppercase; font-size: 18px; letter-spacing: 1px; margin-right: 12px; }
+</style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="eyebrow">05 / Architecture Boundary</div>
+    <h1>The kernel stays small and stable</h1>
+    <div class="grid">
+      <div class="path-box">
+        <div class="path-title">The Invariant Kernel</div>
+        <ul class="list">
+          <li>Decision episodes and workflow</li>
+          <li>Evidence binding and provenance</li>
+          <li>Immutable events and audit</li>
+          <li>Replay and lifecycle management</li>
+          <li>Action and outcome closure</li>
+        </ul>
+      </div>
+      <div class="path-box adapter">
+        <div class="path-title">Replaceable Adapters & Engines</div>
+        <ul class="list">
+          <li>AML Adapter (canonicalization, identity binding)</li>
+          <li>Policy Interpreter (compiled IR, hard constraints)</li>
+          <li>Candidate Fact Service (watchlist index)</li>
+          <li>Graph Engine (exposure, concentration)</li>
+          <li>Action Executor (allow, hold, block, review)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="bottom-bar">
+      <span>Rule</span> Adapters translate meaning; they do not fork the decision theory.
+    </div>
+  </div>
+</body>
+</html>

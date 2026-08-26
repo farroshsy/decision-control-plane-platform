@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "title": "RPO Admission Control and Fencing",
+    "created": 1787562384.725,
+    "last_updated": 1787562771.307,
+    "total_slides": 7
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "rpo_boundary",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "admission_gate",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "fencing_epochs",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "sequence",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "test_results",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "decision",
+      "state": "edited",
+      "pageNum": 7
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "RPO Admission Control and Fencing",
+      "summary": "The control that turns active-active uncertainty into safe, typed outcomes."
+    },
+    {
+      "id": "rpo_boundary",
+      "title": "Why RPO is a decision boundary",
+      "summary": "Show how replication freshness changes what the system may safely do."
+    },
+    {
+      "id": "admission_gate",
+      "title": "Admission control before side effects",
+      "summary": "Explain the ordered checks that guard decision issuance and action execution."
+    },
+    {
+      "id": "fencing_epochs",
+      "title": "Fencing is stronger than routing",
+      "summary": "Explain ownership epochs, stale-writer rejection, and split-brain prevention."
+    },
+    {
+      "id": "sequence",
+      "title": "The partition sequence",
+      "summary": "Show serve, partition, fence/takeover, heal/reconcile, and controlled failback."
+    },
+    {
+      "id": "test_results",
+      "title": "What the tests prove",
+      "summary": "Summarize synchronous and asynchronous Byzantine harness results and their limits."
+    },
+    {
+      "id": "decision",
+      "title": "Executive decision",
+      "summary": "Fund the bounded pilot, enforce invariants, and scale only on evidence."
+    }
+  ]
+}

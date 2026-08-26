@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Policy Interpreter turns facts into governed action</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .slide-container {
+    width: 1280px;
+    min-height: 720px;
+    background: #ffffff;
+    color: #0A1128;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 52px 62px 0 62px;
+  }
+  .eyebrow {
+    font: 700 12px "Courier New", monospace;
+    letter-spacing: 2px;
+    color: #00509E;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-size: 42px;
+    line-height: 1.05;
+    letter-spacing: -1.5px;
+    margin: 0 0 36px 0;
+  }
+  .io-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid #0A1128;
+    border-left: 1px solid #0A1128;
+    margin-bottom: 32px;
+  }
+  .io-cell {
+    border-right: 1px solid #0A1128;
+    border-bottom: 1px solid #0A1128;
+    padding: 24px 32px;
+  }
+  .io-title {
+    font: 700 14px "Courier New", monospace;
+    color: #00509E;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .io-list {
+    font: 400 16px/1.5 "Courier New", monospace;
+    color: #334155;
+    margin: 0;
+    padding-left: 20px;
+  }
+  .principles-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border-top: 1px solid #0A1128;
+    border-left: 1px solid #0A1128;
+  }
+  .principle-cell {
+    border-right: 1px solid #0A1128;
+    border-bottom: 1px solid #0A1128;
+    padding: 24px 32px;
+    min-height: 160px;
+  }
+  .principle-title {
+    font: 700 18px Arial, Helvetica, sans-serif;
+    color: #0A1128;
+    margin-bottom: 12px;
+  }
+  .principle-desc {
+    font: 400 15px/1.4 "Courier New", monospace;
+    color: #334155;
+  }
+  .principle-desc code {
+    background: #f8fafc;
+    padding: 2px 4px;
+    border: 1px solid #cbd5e1;
+    color: #D90429;
+  }
+  .footer {
+    margin-top: 32px;
+    border-top: 8px solid #D90429;
+    padding-top: 16px;
+    font: 400 16px/1.4 Arial, Helvetica, sans-serif;
+    color: #0A1128;
+  }
+  .footer strong {
+    color: #D90429;
+  }
+</style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="eyebrow">08 / Policy Execution</div>
+    <h1>The Policy Interpreter turns facts into governed action</h1>
+    
+    <div class="io-grid">
+      <div class="io-cell">
+        <div class="io-title">Input Contract</div>
+        <ul class="io-list">
+          <li>Typed facts & evidence snapshot</li>
+          <li>Context & state</li>
+          <li>Policy bundle</li>
+          <li>Evaluation clock</li>
+        </ul>
+      </div>
+      <div class="io-cell">
+        <div class="io-title">Output Contract</div>
+        <ul class="io-list">
+          <li>Disposition & obligations</li>
+          <li>Routes & missing-data behavior</li>
+          <li>Fired rules & counterevidence</li>
+          <li>Explanation & trace hash</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="principles-grid">
+      <div class="principle-cell">
+        <div class="principle-title">Hard Constraints First</div>
+        <div class="principle-desc">Hard constraints run before soft scoring or optimization. Law and eligibility cannot be reduced to statistical ranking.</div>
+      </div>
+      <div class="principle-cell">
+        <div class="principle-title">Explicit States</div>
+        <div class="principle-desc"><code>true</code>, <code>false</code>, <code>unknown</code>, and <code>conflicted</code> are explicit states. Missing data must not silently become safe.</div>
+      </div>
+      <div class="principle-cell">
+        <div class="principle-title">Lifecycle & Testing</div>
+        <div class="principle-desc">Policies are effective-dated, immutable after activation, and tested in shadow mode before deployment.</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <strong>Regulatory Alignment:</strong> OFAC's framework similarly emphasizes risk assessment, internal controls, testing, audit, recordkeeping, and rapid response to changing sanctions data.
+    </div>
+  </div>
+</body>
+</html>

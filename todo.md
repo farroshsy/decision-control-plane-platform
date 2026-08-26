@@ -52,7 +52,7 @@
 - [x] Add signed semantic-diff evidence-package manifests with verifiable integrity fields and tenant-scoped retention-policy records.
 - [x] Add tenant-scoped investigation-case outcome filtering and deterministic sorting for operator work queues.
 - [x] Validate, document, and checkpoint the workflow-management expansion.
-- [ ] Consolidate project research, plans, reference documents, and presentation source materials into a structured repository documentation archive.
-- [ ] Add a documentation index that maps theory, pilot planning, process models, operational guidance, integration contracts, and presentation assets to their repository locations.
-- [ ] Write a comprehensive root README covering the product purpose, architecture, pilot boundaries, local development, validation, and documentation navigation.
-- [ ] Validate the documentation archive and README links, then checkpoint the consolidated repository update.
+- [x] Consolidate project research, plans, reference documents, and presentation source materials into a structured repository documentation archive.
+- [x] Add a documentation index that maps theory, pilot planning, process models, operational guidance, integration contracts, and presentation assets to their repository locations.
+- [x] Write a comprehensive root README covering the product purpose, architecture, pilot boundaries, local development, validation, and documentation navigation.
+- [x] Validate the documentation archive and README links, then checkpoint the consolidated repository update.

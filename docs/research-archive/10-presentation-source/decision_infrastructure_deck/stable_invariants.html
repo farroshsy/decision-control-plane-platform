@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What must remain stable for a decade</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .slide-container {
+    width: 1280px;
+    min-height: 720px;
+    background: #ffffff;
+    color: #0A1128;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 56px 62px 0 62px;
+  }
+  .eyebrow {
+    font: 700 12px "Courier New", monospace;
+    letter-spacing: 2px;
+    color: #00509E;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: 43px;
+    line-height: 1.04;
+    letter-spacing: -1.5px;
+    margin: 0 0 40px 0;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+  }
+  .list-col {
+    border-top: 4px solid #D90429;
+  }
+  .list-item {
+    border-bottom: 1px solid #0A1128;
+    padding: 20px 0;
+    font: 400 18px/1.4 "Courier New", monospace;
+    color: #0A1128;
+    display: flex;
+    align-items: flex-start;
+  }
+  .list-item::before {
+    content: "■";
+    color: #00509E;
+    font-size: 12px;
+    margin-right: 16px;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="eyebrow">09 / Architecture Invariants</div>
+    <h1>What must remain stable for a decade</h1>
+    
+    <div class="grid">
+      <div class="list-col">
+        <div class="list-item">Decision episode as the primary unit</div>
+        <div class="list-item">Subject–relationship–exposure context</div>
+        <div class="list-item">Evidence and claim provenance</div>
+        <div class="list-item">Temporal validity and dual clocks</div>
+        <div class="list-item">Hard constraints separated from estimates</div>
+      </div>
+      <div class="list-col">
+        <div class="list-item">Immutable history and deterministic replay</div>
+        <div class="list-item">Explicit unknown and conflict states</div>
+        <div class="list-item">Human accountability, challenge, and exception paths</div>
+        <div class="list-item">Action and outcome closure</div>
+        <div class="list-item">Versioned extension contracts and falsifiable benchmarks</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

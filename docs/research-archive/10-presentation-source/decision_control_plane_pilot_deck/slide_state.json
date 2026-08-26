@@ -1,0 +1,102 @@
+{
+  "project_info": {
+    "title": "First Pilot Customer: Production Runbook",
+    "created": 1787623380.715,
+    "last_updated": 1787623551.534,
+    "total_slides": 9
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "evidence",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "boundary",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "deployment",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "developer",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "observability",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "gates",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "rollback",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "decision",
+      "state": "edited",
+      "pageNum": 9
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "First Pilot Customer: Production Runbook",
+      "summary": "A controlled path from incumbent engine to bounded production authority."
+    },
+    {
+      "id": "evidence",
+      "title": "What the MVP evidence says",
+      "summary": "Reference tests pass the protocol gates while customer-specific capacity and effectiveness remain to be proven."
+    },
+    {
+      "id": "boundary",
+      "title": "The production pilot boundary",
+      "summary": "Keep the first deployment bounded to one rail, tenant, policy bundle, and action boundary."
+    },
+    {
+      "id": "deployment",
+      "title": "Ten deployment steps",
+      "summary": "Show the exact path from charter to canary and closeout."
+    },
+    {
+      "id": "developer",
+      "title": "The customer developer path",
+      "summary": "Typed SDK onboarding from sandbox fixtures to shadow, canary, and handoff."
+    },
+    {
+      "id": "observability",
+      "title": "Production observability",
+      "summary": "Show the real-time operator dashboard for RPO, ownership, fencing, admission latency, audit, and actions."
+    },
+    {
+      "id": "gates",
+      "title": "Hard gates before authority",
+      "summary": "List correctness, determinism, fencing, action, RPO, isolation, and operations gates."
+    },
+    {
+      "id": "rollback",
+      "title": "Canary, rollback, and day two",
+      "summary": "Explain reversible cutover, ownership-epoch rollback, and ongoing operating cadence."
+    },
+    {
+      "id": "decision",
+      "title": "The executive decision",
+      "summary": "Fund the bounded pilot, protect the kernel, and expand only on evidence."
+    }
+  ]
+}

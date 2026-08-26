@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 48px 72px 0 72px; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 42px; line-height: 1.08; margin: 12px 0 0 0; letter-spacing: -1px; }
+    .thesis { font-size: 20px; color: #475569; margin-top: 12px; max-width: 1000px; }
+    
+    .columns { display: flex; flex-direction: row; justify-content: space-between; margin-top: 24px; }
+    .column { width: 47%; border-top: 3px solid #0A1128; padding-top: 12px; }
+    .col-title { font-size: 26px; font-weight: 800; color: #0A1128; margin-bottom: 8px; }
+    .col-metric { font-size: 20px; font-weight: 700; color: #D90429; margin-bottom: 16px; letter-spacing: 1px; }
+    
+    .finding { margin-bottom: 12px; }
+    .finding-title { font-size: 18px; font-weight: 700; color: #00509E; margin-bottom: 4px; }
+    .finding-desc { font-size: 17px; line-height: 1.4; color: #334155; }
+    
+    .disclaimer { margin-top: 24px; padding-top: 12px; border-top: 2px solid #D90429; }
+    .disclaimer-title { font-size: 16px; font-weight: 800; color: #D90429; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+    .disclaimer-text { font-size: 18px; line-height: 1.4; color: #0A1128; font-weight: 700; }
+    
+    .footer { margin-top: auto; border-top: 1px solid #CBD5E1; padding-top: 8px; padding-bottom: 8px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="kicker">05 / Test results</div>
+    <h1>What the tests prove</h1>
+    <div class="thesis">Deterministic harnesses validate the protocol safety checks across both synchronous partitions and asynchronous Byzantine faults.</div>
+    
+    <div class="columns">
+      <div class="column">
+        <div class="col-title">Continuous Partition Harness</div>
+        <div class="col-metric">8/8 SCENARIOS PASS</div>
+        
+        <div class="finding">
+          <div class="finding-title">Zero split-brain &amp; duplicates</div>
+          <div class="finding-desc">No dual authority during partition. Idempotency deferred unsafe retries.</div>
+        </div>
+        <div class="finding">
+          <div class="finding-title">Fencing &amp; RPO holds</div>
+          <div class="finding-desc">Stale regions safely rejected writes. High-risk decisions were held when replication lag exceeded the budget.</div>
+        </div>
+      </div>
+      
+      <div class="column">
+        <div class="col-title">Asynchronous Byzantine Harness</div>
+        <div class="col-metric">6/6 SCENARIOS PASS</div>
+        
+        <div class="finding">
+          <div class="finding-title">Fault tolerance</div>
+          <div class="finding-desc">Corrupted messages were rejected. Delayed and duplicated messages were safely deduplicated.</div>
+        </div>
+        <div class="finding">
+          <div class="finding-title">Recovery completeness</div>
+          <div class="finding-desc">After healing, valid events were recovered without missing data or applying stale epochs.</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="disclaimer">
+      <div class="disclaimer-title">Limits of the evidence</div>
+      <div class="disclaimer-text">These are protocol results, not production capacity claims. The next step is infrastructure-specific chaos testing with pilot telemetry.</div>
+    </div>
+
+    <div class="footer">
+      <div>Decision Control Plane · Harness Results</div>
+      <div>05</div>
+    </div>
+  </div>
+</body>
+</html>

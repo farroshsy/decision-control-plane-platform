@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>High-frequency screening is a temporal graph problem</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .slide-container {
+    width: 1280px;
+    min-height: 720px;
+    background: #ffffff;
+    color: #0A1128;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 56px 62px 0 62px;
+  }
+  .eyebrow {
+    font: 700 12px "Courier New", monospace;
+    letter-spacing: 2px;
+    color: #00509E;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: 43px;
+    line-height: 1.04;
+    letter-spacing: -1.5px;
+    margin: 0 0 40px 0;
+  }
+  .grid-2x2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    border-top: 1px solid #0A1128;
+    border-left: 1px solid #0A1128;
+  }
+  .cell {
+    border-right: 1px solid #0A1128;
+    border-bottom: 1px solid #0A1128;
+    padding: 32px 40px;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+  }
+  .tag {
+    font: 700 14px "Courier New", monospace;
+    color: #00509E;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+  }
+  .desc {
+    font: 400 18px/1.45 "Courier New", monospace;
+    color: #334155;
+  }
+  .desc strong {
+    color: #D90429;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+</style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="eyebrow">05 / Temporal Graph</div>
+    <h1>High-frequency screening is a temporal graph problem</h1>
+    
+    <div class="grid-2x2">
+      <div class="cell">
+        <div class="tag">Identity & Relationships</div>
+        <div class="desc">Party identity is not enough: include accounts, beneficial owners, intermediaries, affiliates, wallets, and jurisdictions.</div>
+      </div>
+      <div class="cell">
+        <div class="tag">Lists & Behavior</div>
+        <div class="desc">Screen both lists and behavior: transaction monitoring is a subset of broader suspicious-activity monitoring.</div>
+      </div>
+      <div class="cell">
+        <div class="tag">Dual Clocks</div>
+        <div class="desc">Use <strong>event time</strong> and <strong>processing time</strong> explicitly to handle late, out-of-order, or retrospective data.</div>
+      </div>
+      <div class="cell">
+        <div class="tag">Match States</div>
+        <div class="desc">Treat candidate match, confirmed match, anomaly, and legal conclusion as distinctly different states.</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; }
+    .content { padding: 48px 72px 0 72px; min-height: 720px; display: flex; flex-direction: column; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 42px; line-height: 1.08; margin: 12px 0 0 0; letter-spacing: -1px; }
+    .thesis { font-size: 20px; color: #475569; margin-top: 12px; max-width: 1000px; }
+    
+    .grid { display: flex; flex-direction: row; justify-content: space-between; margin-top: 28px; }
+    .col { width: 47%; display: flex; flex-direction: column; gap: 12px; }
+    
+    .step { display: flex; flex-direction: row; border-top: 1px solid #CBD5E1; padding-top: 10px; align-items: flex-start; }
+    .step:first-child { border-top: 2px solid #0A1128; }
+    
+    .step-num { width: 10%; font-size: 18px; font-weight: 800; color: #D90429; letter-spacing: 1px; padding-top: 2px; }
+    .step-text { width: 90%; }
+    .step-title { font-size: 20px; font-weight: 700; color: #0A1128; }
+    .step-desc { font-size: 16px; line-height: 1.35; color: #334155; margin-top: 4px; }
+    
+    .footer { margin-top: auto; border-top: 1px solid #CBD5E1; padding-top: 10px; padding-bottom: 12px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="content">
+      <div class="kicker">03 / Deployment sequence</div>
+      <h1>Ten deployment steps</h1>
+      <div class="thesis">The exact path from pilot charter to canary cutover and closeout. Each step has an exit condition; the next step does not begin just because the calendar says so.</div>
+      
+      <div class="grid">
+        <div class="col">
+          <div class="step">
+            <div class="step-num">01</div>
+            <div class="step-text">
+              <div class="step-title">Approve charter</div>
+              <div class="step-desc">Define scope, owners, RPO/RTO targets, and success gates.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">02</div>
+            <div class="step-text">
+              <div class="step-title">Landing zone</div>
+              <div class="step-desc">Establish tenant isolation, KMS keys, identities, and network policies.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">03</div>
+            <div class="step-text">
+              <div class="step-title">Register contracts</div>
+              <div class="step-desc">Publish schemas, policies, and state manifests. Enable compatibility checks.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">04</div>
+            <div class="step-text">
+              <div class="step-title">Connect adapter</div>
+              <div class="step-desc">Validate ingress, canonicalization, and provenance without action execution.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">05</div>
+            <div class="step-text">
+              <div class="step-title">Capture incumbent</div>
+              <div class="step-desc">Build the historical replay and comparison corpus from legacy decisions.</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col">
+          <div class="step">
+            <div class="step-num">06</div>
+            <div class="step-text">
+              <div class="step-title">Shadow mode</div>
+              <div class="step-desc">Run Policy Interpreter, compare outputs, and classify all divergence.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">07</div>
+            <div class="step-text">
+              <div class="step-title">Validate resilience</div>
+              <div class="step-desc">Execute RPO admission, partition fencing, and tenant isolation drills.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">08</div>
+            <div class="step-text">
+              <div class="step-title">Action dry run</div>
+              <div class="step-desc">Test idempotency and reconciliation on a safe, non-executing endpoint.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">09</div>
+            <div class="step-text">
+              <div class="step-title">Canary cutover</div>
+              <div class="step-desc">Advance ownership epoch for a bounded cohort and monitor telemetry.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">10</div>
+            <div class="step-text">
+              <div class="step-title">Pilot closeout</div>
+              <div class="step-desc">Produce evidence package, measure economics, and decide on expansion.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div>Decision Control Plane · Deployment Sequence</div>
+        <div>03</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

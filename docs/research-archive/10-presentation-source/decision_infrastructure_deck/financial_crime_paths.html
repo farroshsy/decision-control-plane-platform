@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial-crime screening needs two coordinated paths</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .slide-container { width: 1280px; min-height: 720px; background: #ffffff; color: #0A1128; font-family: Arial, Helvetica, sans-serif; padding: 56px 62px 0; }
+  .eyebrow { font: 700 12px "Courier New", monospace; letter-spacing: 2px; color: #00509E; text-transform: uppercase; margin-bottom: 16px; }
+  h1 { font-size: 43px; line-height: 1.04; letter-spacing: -1.5px; margin: 0 0 40px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+  .path-box { border: 1px solid #0A1128; border-top: 8px solid #00509E; padding: 35px 40px; min-height: 420px; }
+  .path-box.durable { border-top-color: #D90429; }
+  .path-title { font-size: 32px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px; }
+  .path-subtitle { font: 700 14px "Courier New", monospace; color: #475569; margin-bottom: 35px; text-transform: uppercase; letter-spacing: 1px; }
+  .list { list-style: none; padding: 0; margin: 0; }
+  .list li { font: 400 18px/1.5 "Courier New", monospace; color: #334155; margin-bottom: 24px; padding-left: 24px; position: relative; }
+  .list li::before { content: "■"; color: #0A1128; position: absolute; left: 0; top: 2px; font-size: 12px; }
+</style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="eyebrow">04 / Operating Model</div>
+    <h1>Financial-crime screening needs two coordinated paths</h1>
+    <div class="grid">
+      <div class="path-box">
+        <div class="path-title">Fast path</div>
+        <div class="path-subtitle">Bounded, deterministic pre-execution</div>
+        <ul class="list">
+          <li>Normalize parties and transaction fields</li>
+          <li>Resolve current entity, list, graph, and feature state</li>
+          <li>Evaluate effective-dated policy</li>
+          <li>Allow, block, hold, step-up, or route to review</li>
+        </ul>
+      </div>
+      <div class="path-box durable">
+        <div class="path-title">Durable path</div>
+        <div class="path-subtitle">Investigation and learning</div>
+        <ul class="list">
+          <li>Preserve evidence snapshot and policy trace</li>
+          <li>Enrich graph and related activity asynchronously</li>
+          <li>Record analyst finding, reporting obligation, and outcome</li>
+          <li>Reopen without rewriting the original decision</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

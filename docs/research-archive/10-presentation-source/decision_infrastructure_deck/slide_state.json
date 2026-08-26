@@ -1,0 +1,133 @@
+{
+  "project_info": {
+    "title": "Decision Infrastructure",
+    "created": 1787456172.221,
+    "last_updated": 1787456392.101,
+    "total_slides": 12
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "recurring_decision",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "invariant",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "decision_grammar",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "financial_crime_paths",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "temporal_graph",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "canonical_object",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "domain_adapter",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "policy_interpreter",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "stable_invariants",
+      "state": "edited",
+      "pageNum": 10
+    },
+    {
+      "id": "pluggable_surfaces",
+      "state": "edited",
+      "pageNum": 11
+    },
+    {
+      "id": "architecture_roadmap",
+      "state": "edited",
+      "pageNum": 12
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Decision Infrastructure",
+      "summary": "A decade-stable kernel for relationship-centric decisions under uncertainty across industries."
+    },
+    {
+      "id": "recurring_decision",
+      "title": "The same decision recurs under different names",
+      "summary": "Compare supplier, counterparty, contractor, and clinical-site decisions and introduce the contextual relationship decision."
+    },
+    {
+      "id": "invariant",
+      "title": "The invariant is a replayable decision event",
+      "summary": "State the memorable invariant and its implications for evidence, relationships, policy, action, and outcomes."
+    },
+    {
+      "id": "decision_grammar",
+      "title": "The decision grammar is stable across industries",
+      "summary": "Separate universal primitives from domain-variable semantics and reject the universal risk-score abstraction."
+    },
+    {
+      "id": "financial_crime_paths",
+      "title": "Financial-crime screening needs two coordinated paths",
+      "summary": "Explain the synchronous transaction disposition path and durable investigation and learning path."
+    },
+    {
+      "id": "temporal_graph",
+      "title": "High-frequency screening is a temporal graph problem",
+      "summary": "Show why party identity, relationships, behavior, dual clocks, and distinct match states matter."
+    },
+    {
+      "id": "canonical_object",
+      "title": "The canonical decision object preserves the proof",
+      "summary": "Summarize the transaction decision object's identity, evidence, facts, policy trace, action, and replay fields."
+    },
+    {
+      "id": "domain_adapter",
+      "title": "The Domain Adapter is the semantic boundary",
+      "summary": "Define what belongs in the core kernel versus the AML adapter and its responsibilities."
+    },
+    {
+      "id": "policy_interpreter",
+      "title": "The Policy Interpreter turns facts into governed action",
+      "summary": "Present the Policy Interpreter contract, hard constraints, unknown states, versioning, and testing."
+    },
+    {
+      "id": "stable_invariants",
+      "title": "What must remain stable for a decade",
+      "summary": "List the stable theoretical and architectural invariants that future implementations must preserve."
+    },
+    {
+      "id": "pluggable_surfaces",
+      "title": "What should remain replaceable",
+      "summary": "Map pluggable surfaces—matching, policy, models, graphs, streams, simulation, and visualization—to future implementations.",
+      "image_plan": "/home/ubuntu/decision_infrastructure_architecture.png - Slide 11 details the reference architecture control loop matching the system diagram in Image 1"
+    },
+    {
+      "id": "architecture_roadmap",
+      "title": "Build the kernel before the industry pack",
+      "summary": "Present the control-loop architecture and a staged build sequence from canonical schemas to cross-industry adapters."
+    }
+  ]
+}

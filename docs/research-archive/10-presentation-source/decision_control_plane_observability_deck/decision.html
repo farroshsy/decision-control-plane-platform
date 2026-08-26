@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #0A1128; color: #F8FAFC; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 52px 72px 0 72px; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #94A3B8; }
+    h1 { font-size: 56px; line-height: 1.08; letter-spacing: -1.2px; margin: 24px 0 0 0; font-weight: 800; }
+    .accent { color: #F0445B; }
+    .thesis { font-size: 24px; line-height: 1.4; color: #CBD5E1; margin-top: 12px; max-width: 900px; }
+    .columns { display: flex; flex-direction: row; justify-content: space-between; margin-top: 48px; gap: 24px; }
+    .column { width: 31%; border-top: 4px solid #F0445B; padding-top: 12px; }
+    h2 { font-size: 28px; margin: 0 0 12px 0; line-height: 1.15; color: #F8FAFC; }
+    .body { font-size: 18px; line-height: 1.45; color: #94A3B8; }
+    .footer { margin-top: auto; border-top: 1px solid #334155; padding-top: 12px; padding-bottom: 16px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="kicker">06 / The Executive Takeaway</div>
+    <h1>Observable by design.<br>Measure <span class="accent">semantic safety.</span></h1>
+    <div class="thesis">We do not infer health from infrastructure metrics like CPU or network throughput. We measure the actual safety of decisions, authority, and evidence.</div>
+    
+    <div class="columns">
+      <div class="column">
+        <h2>1. Semantic Safety</h2>
+        <div class="body">Monitor idempotency, fencing rejections, RPO admission, and audit durability to guarantee that the system is operating within its safety envelope.</div>
+      </div>
+      <div class="column">
+        <h2>2. Explicit Degradation</h2>
+        <div class="body">Ensure that when the system degrades, it fails safely and visibly, turning uncertainty into typed outcomes rather than silent errors.</div>
+      </div>
+      <div class="column">
+        <h2>3. Operational Readiness</h2>
+        <div class="body">Equip operators with the exact telemetry needed to answer "is it safe to allow?" in real time during a high-frequency incident.</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Decision Control Plane · Executive Briefing</div>
+      <div>06</div>
+    </div>
+  </div>
+</body>
+</html>

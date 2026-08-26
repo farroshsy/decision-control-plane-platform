@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 48px 72px 0 72px; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 42px; line-height: 1.08; margin: 12px 0 0 0; letter-spacing: -1px; }
+    .thesis { font-size: 20px; color: #475569; margin-top: 12px; max-width: 1000px; }
+    
+    /* Reduced vertical spacing to avoid overflow while keeping fonts unchanged */
+    .gate-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .gate-row { display: flex; border-top: 1px solid #CBD5E1; padding-top: 6px; align-items: flex-start; }
+    .gate-row:first-child { border-top: 2px solid #0A1128; }
+    
+    .gate-num { width: 8%; font-size: 18px; font-weight: 800; color: #D90429; letter-spacing: 1px; padding-top: 2px; }
+    .gate-title { width: 32%; font-size: 22px; font-weight: 700; color: #0A1128; padding-right: 20px; }
+    .gate-criteria { width: 60%; font-size: 20px; color: #334155; line-height: 1.35; }
+    
+    .footer { margin-top: auto; border-top: 1px solid #CBD5E1; padding-top: 8px; padding-bottom: 8px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="kicker">05 / Validation Gates</div>
+    <h1>Production gates before scale</h1>
+    <div class="thesis">The platform must prove its resilience and correctness through measured evidence before expanding beyond the first vertical slice.</div>
+    
+    <div class="gate-list">
+      <div class="gate-row">
+        <div class="gate-num">01</div>
+        <div class="gate-title">Split-brain prevention</div>
+        <div class="gate-criteria">Zero dual-authority writes during partition drills. Stale regions must be successfully fenced.</div>
+      </div>
+      <div class="gate-row">
+        <div class="gate-num">02</div>
+        <div class="gate-title">Action idempotency</div>
+        <div class="gate-criteria">Zero duplicate side effects across failover boundaries. Retries must reconcile safely.</div>
+      </div>
+      <div class="gate-row">
+        <div class="gate-num">03</div>
+        <div class="gate-title">RPO admission control</div>
+        <div class="gate-criteria">High-risk decisions must be held or rejected when replication lag exceeds the defined budget.</div>
+      </div>
+      <div class="gate-row">
+        <div class="gate-num">04</div>
+        <div class="gate-title">Replay equivalence</div>
+        <div class="gate-criteria">&ge;99.99% exact reproduction of pinned historical decisions using the immutable event ledger.</div>
+      </div>
+      <div class="gate-row">
+        <div class="gate-num">05</div>
+        <div class="gate-title">Tenant isolation</div>
+        <div class="gate-criteria">Zero cross-tenant read or write findings during negative testing of the authorization context.</div>
+      </div>
+      <div class="gate-row">
+        <div class="gate-num">06</div>
+        <div class="gate-title">Recovery time (RTO)</div>
+        <div class="gate-criteria">Takeover, projection rebuilds, and controlled failback executed within agreed operational windows.</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Decision Control Plane · Hard Validation Gates</div>
+      <div>05</div>
+    </div>
+  </div>
+</body>
+</html>

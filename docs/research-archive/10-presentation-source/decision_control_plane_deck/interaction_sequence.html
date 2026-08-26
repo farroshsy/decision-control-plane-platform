@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>One transaction, end to end</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+.slide-container{width:1280px;min-height:720px;background:#fff;color:#0A1128;font-family:Arial,Helvetica,sans-serif}
+.inner{padding:54px 62px 0}
+.eyebrow{font:700 12px "Courier New",monospace;letter-spacing:2px;color:#00509E;text-transform:uppercase;margin-bottom:14px}
+h1{font-size:42px;line-height:1.04;letter-spacing:-1.5px;margin:0 0 24px}
+.image-container{border:1px solid #0A1128;background:#f8fafc;padding:10px;height:480px;display:flex;justify-content:center;align-items:center}
+.image-container img{max-width:100%;max-height:100%;object-fit:contain}
+.footer{margin-top:24px;border-top:1px solid #0A1128;padding-top:14px;font:400 16px/1.35 "Courier New",monospace}
+.footer strong{color:#D90429;font-family:Arial,Helvetica,sans-serif}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="inner">
+    <div class="eyebrow">04 / Interaction sequence</div>
+    <h1>One transaction, end to end</h1>
+    <div class="image-container">
+      <img src="/home/ubuntu/decision_control_plane_sequence.png" alt="Interaction Sequence Diagram">
+    </div>
+    <div class="footer"><strong>Design rule:</strong> The hot path is bounded and synchronous; rich evidence, graph expansion, and explanations are asynchronous.</div>
+  </div>
+</div>
+</body>
+</html>

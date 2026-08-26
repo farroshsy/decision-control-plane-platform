@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    /* Reduce page top offset so the total rendered height is strictly under 720px */
+    body { margin: -1px; }
+    /* Keep min-height but tighten spacing internally */
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 47px 72px 0 72px; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 42px; line-height: 1.08; margin: 12px 0 0 0; letter-spacing: -1px; }
+    .thesis { font-size: 20px; color: #475569; margin-top: 12px; max-width: 1000px; }
+    
+    .flow { display: flex; flex-direction: row; justify-content: space-between; margin-top: 36px; }
+    .step { width: 31%; border-top: 4px solid #0A1128; padding-top: 12px; }
+    .step.fence { border-top-color: #D90429; }
+    .step.new-epoch { border-top-color: #00509E; }
+    
+    .step-label { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; font-weight: 800; color: #64748B; margin-bottom: 8px; }
+    .fence .step-label { color: #D90429; }
+    .new-epoch .step-label { color: #00509E; }
+    
+    .step-title { font-size: 28px; font-weight: 800; margin-bottom: 12px; line-height: 1.15; }
+    .step-desc { font-size: 18px; line-height: 1.45; color: #334155; }
+    
+    .footer { margin-top: 0; border-top: 1px solid #CBD5E1; padding-top: 12px; padding-bottom: 12px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="kicker">03 / Fencing and Epochs</div>
+    <h1>Fencing is stronger than routing</h1>
+    <div class="thesis">DNS and load balancers can stop new traffic, but they cannot prove an old writer has stopped. Fencing is an authorization fact enforced at write time.</div>
+    
+    <div class="flow">
+      <div class="step">
+        <div class="step-label">State 01</div>
+        <div class="step-title">Epoch 1: Region A</div>
+        <div class="step-desc">Region A holds the active lease. Writes are accepted because the request epoch matches the current ownership epoch.</div>
+      </div>
+      <div class="step fence">
+        <div class="step-label">State 02</div>
+        <div class="step-title">Quorum Fence</div>
+        <div class="step-desc">A partition occurs. Quorum authority revokes Epoch 1. Region A becomes a stale writer and its writes are explicitly rejected.</div>
+      </div>
+      <div class="step new-epoch">
+        <div class="step-label">State 03</div>
+        <div class="step-title">Epoch 2: Region B</div>
+        <div class="step-desc">Region B acquires Epoch 2 and becomes the sole writer. Split-brain is prevented because Region A cannot write under Epoch 1.</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Decision Control Plane · Split-brain prevention</div>
+      <div>03</div>
+    </div>
+  </div>
+</body>
+</html>

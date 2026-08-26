@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; }
+    .content { padding: 48px 72px 0 72px; min-height: 720px; display: flex; flex-direction: column; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 42px; line-height: 1.08; margin: 12px 0 0 0; letter-spacing: -1px; }
+    .thesis { font-size: 20px; color: #475569; margin-top: 12px; }
+    .visual-wrap { display: flex; justify-content: center; padding-top: 14px; }
+    /* Further reduced image height (351 -> 342) and visual top padding (20 -> 14) to remove overflow */
+    .visual { width: 1136px; height: 342px; object-fit: contain; }
+    .metrics { display: flex; flex-direction: row; justify-content: space-between; border-top: 2px solid #0A1128; margin-top: 20px; padding-top: 15px; }
+    .metric { width: 23%; }
+    .metric-val { font-size: 36px; font-weight: 800; color: #D90429; line-height: 1; margin-bottom: 8px; }
+    .metric-label { font-size: 16px; line-height: 1.35; color: #0A1128; font-weight: 700; }
+    .metric-desc { font-size: 14px; line-height: 1.35; color: #475569; margin-top: 4px; }
+    .footer { margin-top: auto; border-top: 1px solid #CBD5E1; padding-top: 12px; padding-bottom: 22px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="content">
+      <div class="kicker">03 / Simulation results</div>
+      <h1>Safe degradation worked under partition</h1>
+      <div class="thesis">The continuous partition-injection harness proved that fencing and RPO admission control prevent unsafe duplication.</div>
+      <div class="visual-wrap"><img class="visual" src="/home/ubuntu/decision_control_plane_dr_simulation_chart.png" alt="Simulation chart" /></div>
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-val">0</div>
+          <div class="metric-label">Split-brain accepts</div>
+          <div class="metric-desc">No dual authority during partition.</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val">0</div>
+          <div class="metric-label">Duplicate actions</div>
+          <div class="metric-desc">Idempotency deferred unsafe retries.</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val">1,300</div>
+          <div class="metric-label">Fenced writes</div>
+          <div class="metric-desc">Stale region safely rejected writes.</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val">399</div>
+          <div class="metric-label">RPO-driven holds</div>
+          <div class="metric-desc">High-risk decisions held until heal.</div>
+        </div>
+      </div>
+      <div class="footer"><div>Decision Control Plane · deterministic simulation outputs</div><div>03</div></div>
+    </div>
+  </div>
+</body>
+</html>

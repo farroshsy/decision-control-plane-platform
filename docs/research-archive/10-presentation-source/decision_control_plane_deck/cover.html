@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decision Control Plane</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+.slide-container{width:1280px;min-height:720px;background:#fff;color:#0A1128;font-family:Arial,Helvetica,sans-serif;display:grid;grid-template-columns:92px 1fr;grid-template-rows:1fr 64px}
+.rail{grid-column:1;grid-row:1/3;border-right:1px solid #0A1128;display:flex;justify-content:center;align-items:flex-start;padding-top:34px}
+.rail-text{writing-mode:vertical-rl;transform:rotate(180deg);font:700 12px "Courier New",monospace;letter-spacing:2px;color:#00509E}
+.main{grid-column:2;grid-row:1;padding:84px 80px 0 80px}
+.kicker{font:700 14px "Courier New",monospace;letter-spacing:2px;text-transform:uppercase;color:#00509E;margin-bottom:18px}
+h1{font-size:82px;line-height:.96;letter-spacing:-4px;max-width:900px;margin:0}
+.rule{width:190px;height:8px;background:#D90429;margin:18px 0 12px 0}
+.promise{font:400 24px/1.35 "Courier New",monospace;max-width:770px;color:#334155}
+.footer-left{grid-column:2;grid-row:2;border-top:1px solid #0A1128;padding:2px 80px 0 80px;font:400 13px/1.3 "Courier New",monospace}
+.footer-right{position:relative;grid-column:2;grid-row:2;border-top:1px solid #0A1128;padding:2px 80px 0 0;text-align:right;font:400 12px/1.45 "Courier New",monospace;color:#475569}
+.footer-right strong{color:#D90429}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="rail"><div class="rail-text">RESEARCH / PRODUCT / 90-DAY MVP</div></div>
+  <section class="main">
+    <div class="kicker">Decision Infrastructure → Product</div>
+    <h1>Decision<br>Control Plane</h1>
+    <div class="rule"></div>
+    <div class="promise">Fast enough to operate.<br>Governed enough to trust.<br>Durable enough to replay.</div>
+  </section>
+  <div class="footer-left">First proving ground: real-time financial-crime screening</div>
+  <div class="footer-right"><strong>ARCHITECTURE REVIEW</strong><br>Product plan / 90-day validation</div>
+</div>
+</body>
+</html>

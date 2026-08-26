@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 48px 72px 0 72px; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 42px; line-height: 1.08; margin: 12px 0 0 0; letter-spacing: -1px; }
+    .thesis { font-size: 20px; color: #475569; margin-top: 12px; max-width: 1000px; }
+    
+    .columns { display: flex; flex-direction: row; justify-content: space-between; margin-top: 36px; }
+    .column { width: 47%; border-top: 3px solid #0A1128; padding-top: 16px; }
+    .col-title { font-size: 26px; font-weight: 800; color: #0A1128; margin-bottom: 20px; }
+    
+    .step-row { display: flex; margin-bottom: 16px; align-items: flex-start; }
+    .step-num { font-size: 16px; font-weight: 800; color: #D90429; width: 32px; padding-top: 2px; }
+    .step-text { font-size: 18px; line-height: 1.4; color: #334155; flex: 1; }
+    .step-text strong { color: #0A1128; }
+    
+    .cadence-row { margin-bottom: 20px; }
+    .cadence-label { font-size: 16px; font-weight: 800; color: #00509E; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .cadence-text { font-size: 18px; line-height: 1.4; color: #334155; }
+    
+    .footer { margin-top: auto; border-top: 1px solid #CBD5E1; padding-top: 10px; padding-bottom: 12px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="kicker">07 / Operations</div>
+    <h1>Canary, rollback, and day two</h1>
+    <div class="thesis">Cutover is reversible, but rollback is a controlled ownership transition, not a simple DNS switch. Operations require a strict rhythm.</div>
+    
+    <div class="columns">
+      <div class="column">
+        <div class="col-title">The Rollback Protocol</div>
+        <div class="step-row">
+          <div class="step-num">01</div>
+          <div class="step-text"><strong>Stop new writes</strong> through the admission gate for the affected cohort.</div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">02</div>
+          <div class="step-text"><strong>Reconcile actions</strong> to ensure no in-flight commands are left ambiguous.</div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">03</div>
+          <div class="step-text"><strong>Fence the epoch</strong> to revoke the Decision Control Plane's write authority.</div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">04</div>
+          <div class="step-text"><strong>Advance incumbent</strong> ownership epoch and route traffic back to the legacy engine.</div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">05</div>
+          <div class="step-text"><strong>Preserve evidence</strong> and events for post-incident replay and divergence classification.</div>
+        </div>
+      </div>
+      
+      <div class="column">
+        <div class="col-title">Ongoing Operating Cadence</div>
+        <div class="cadence-row">
+          <div class="cadence-label">Daily</div>
+          <div class="cadence-text">Review latency tails, RPO lag, audit backlog, action unknowns, and policy drift.</div>
+        </div>
+        <div class="cadence-row">
+          <div class="cadence-label">Weekly</div>
+          <div class="cadence-text">Reconcile sampled decisions, refresh evidence-quality metrics, and review support access.</div>
+        </div>
+        <div class="cadence-row">
+          <div class="cadence-label">Monthly</div>
+          <div class="cadence-text">Run partition, traffic evacuation, action-rail failure, and key-readiness drills.</div>
+        </div>
+        <div class="cadence-row">
+          <div class="cadence-label">Quarterly</div>
+          <div class="cadence-text">Run regional rebuild, split-brain game day, TCO refresh, and stakeholder approval review.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Decision Control Plane · Pilot Operations</div>
+      <div>07</div>
+    </div>
+  </div>
+</body>
+</html>

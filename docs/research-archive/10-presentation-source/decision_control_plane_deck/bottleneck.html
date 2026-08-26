@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The stress test changes the architecture</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .slide-container { width: 1280px; min-height: 720px; background: #ffffff; color: #0A1128; font-family: Arial, Helvetica, sans-serif; padding: 56px 62px 0; }
+  .eyebrow { font: 700 12px "Courier New", monospace; letter-spacing: 2px; color: #00509E; text-transform: uppercase; margin-bottom: 16px; }
+  h1 { font-size: 43px; line-height: 1.04; letter-spacing: -1.5px; margin: 0 0 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+  .path-box { border: 1px solid #0A1128; border-top: 8px solid #00509E; padding: 18px 24px; }
+  .path-box.response { border-top-color: #D90429; }
+  .path-title { font-size: 32px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.5px; }
+  .list { list-style: none; padding: 0; margin: 0; }
+  .list li { font: 400 18px/1.5 "Courier New", monospace; color: #334155; margin-bottom: 12px; padding-left: 24px; position: relative; }
+  .list li::before { content: "■"; color: #0A1128; position: absolute; left: 0; top: 2px; font-size: 12px; }
+  .highlight { color: #D90429; font-weight: 700; font-family: Arial, Helvetica, sans-serif; }
+  .bottom-bar { margin-top: 16px; border-top: 1px solid #0A1128; padding-top: 12px; font: 700 22px/1.3 Arial, Helvetica, sans-serif; color: #0A1128; }
+  .bottom-bar span { color: #D90429; font-family: "Courier New", monospace; text-transform: uppercase; font-size: 18px; letter-spacing: 1px; margin-right: 12px; }
+</style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="eyebrow">09 / Stress Test</div>
+    <h1>The stress test changes the architecture</h1>
+    <div class="grid">
+      <div class="path-box">
+        <div class="path-title">Simulation Results</div>
+        <ul class="list">
+          <li><strong>Policy Interpreter capacity:</strong> ~16,000 tx/s</li>
+          <li><strong>Audit Commit capacity:</strong> ~10,667 tx/s</li>
+          <li>At 10,000 tx/s, audit commit reaches <span class="highlight">93.9% utilization</span> (dangerously close to saturation).</li>
+          <li>At 12,500 tx/s, the audit queue becomes unstable (<span class="highlight">117.1% util</span>), while the interpreter is only at 78.3%.</li>
+        </ul>
+      </div>
+      <div class="path-box response">
+        <div class="path-title">Architectural Response</div>
+        <ul class="list">
+          <li>Durable audit logging cannot be an unbounded synchronous database write.</li>
+          <li>Separate the compact synchronous trace from asynchronous rich-record persistence.</li>
+          <li>Audit persistence must be a separately scalable subsystem.</li>
+          <li>Backpressure must be a policy-visible state, never a silent bypass.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="bottom-bar">
+      <span>Conclusion</span> Scaling the interpreter alone will not increase end-to-end throughput once audit capacity is exhausted.
+    </div>
+  </div>
+</body>
+</html>

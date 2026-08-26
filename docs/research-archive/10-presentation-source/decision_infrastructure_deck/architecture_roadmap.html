@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build the kernel before the industry pack</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .slide-container {
+    width: 1280px;
+    min-height: 720px;
+    background: #ffffff;
+    color: #0A1128;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 52px 62px 0 62px;
+  }
+  .eyebrow {
+    font: 700 12px "Courier New", monospace;
+    letter-spacing: 2px;
+    color: #00509E;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 42px;
+    line-height: 1.05;
+    letter-spacing: -1.5px;
+    margin: 0 0 24px 0;
+  }
+  .roadmap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, 1fr);
+    border-top: 1px solid #0A1128;
+    border-left: 1px solid #0A1128;
+  }
+  .step {
+    border-right: 1px solid #0A1128;
+    border-bottom: 1px solid #0A1128;
+    padding: 20px 24px;
+    display: flex;
+    align-items: flex-start;
+    min-height: 120px;
+  }
+  .step-number {
+    font: 700 32px "Courier New", monospace;
+    color: #00509E;
+    margin-right: 20px;
+    line-height: 1;
+  }
+  .step-desc {
+    font: 400 18px/1.4 "Courier New", monospace;
+    color: #334155;
+    padding-top: 4px;
+  }
+  .bottom-bar {
+    margin-top: 32px;
+    border-top: 8px solid #D90429;
+    padding-top: 16px;
+    font: 700 22px/1.3 Arial, Helvetica, sans-serif;
+    color: #0A1128;
+  }
+  .bottom-bar span {
+    color: #D90429;
+    font-family: "Courier New", monospace;
+    text-transform: uppercase;
+    font-size: 18px;
+    letter-spacing: 1px;
+    margin-right: 12px;
+  }
+</style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="eyebrow">12 / Roadmap</div>
+    <h1>Build the kernel before the industry pack</h1>
+    
+    <div class="roadmap-grid">
+      <div class="step">
+        <div class="step-number">01</div>
+        <div class="step-desc">Freeze canonical schemas, event envelopes, provenance, and replay semantics</div>
+      </div>
+      <div class="step">
+        <div class="step-number">02</div>
+        <div class="step-desc">Build an evidence ledger and temporal relationship graph</div>
+      </div>
+      <div class="step">
+        <div class="step-number">03</div>
+        <div class="step-desc">Implement a narrow AML adapter with benchmarked matching and policy evaluation</div>
+      </div>
+      <div class="step">
+        <div class="step-number">04</div>
+        <div class="step-desc">Add workflow, reporting obligations, monitoring, and outcome capture</div>
+      </div>
+      <div class="step">
+        <div class="step-number">05</div>
+        <div class="step-desc">Prove adapter interchangeability through shadow runs and conformance tests</div>
+      </div>
+      <div class="step">
+        <div class="step-number">06</div>
+        <div class="step-desc">Extend to supply chain, public procurement, counterparty, and clinical domains</div>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <span>Closing principle</span> Build reusable capability, not another dashboard.
+    </div>
+  </div>
+</body>
+</html>

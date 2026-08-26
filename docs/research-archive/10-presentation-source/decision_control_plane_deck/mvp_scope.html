@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The minimum valuable product</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .slide-container { width: 1280px; min-height: 720px; background: #ffffff; color: #0A1128; font-family: Arial, Helvetica, sans-serif; padding: 56px 62px 0; }
+  .eyebrow { font: 700 12px "Courier New", monospace; letter-spacing: 2px; color: #00509E; text-transform: uppercase; margin-bottom: 16px; }
+  h1 { font-size: 43px; line-height: 1.04; letter-spacing: -1.5px; margin: 0 0 40px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+  /* Shrunk inner padding to save vertical space */
+  .path-box { border: 1px solid #0A1128; border-top: 8px solid #00509E; padding: 24px 40px; min-height: 420px; }
+  .path-box.deferred { border-top-color: #D90429; }
+  .path-title { font-size: 32px; font-weight: 700; margin-bottom: 24px; letter-spacing: -0.5px; }
+  .list { list-style: none; padding: 0; margin: 0; }
+  /* Reduced vertical spacing between list items (keeps font size) */
+  .list li { font: 400 18px/1.5 "Courier New", monospace; color: #334155; margin-bottom: 8px; padding-left: 24px; position: relative; }
+  .list li::before { content: "■"; color: #0A1128; position: absolute; left: 0; top: 2px; font-size: 12px; }
+  /* Reduced gap above bottom bar */
+  .bottom-bar { margin-top: 20px; border-top: 1px solid #0A1128; padding-top: 20px; font: 700 22px/1.3 Arial, Helvetica, sans-serif; color: #0A1128; }
+  .bottom-bar span { color: #D90429; font-family: "Courier New", monospace; text-transform: uppercase; font-size: 18px; letter-spacing: 1px; margin-right: 12px; }
+</style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="eyebrow">06 / MVP Scope</div>
+    <h1>The minimum valuable product</h1>
+    <div class="grid">
+      <div class="path-box">
+        <div class="path-title">In Scope: The Vertical Slice</div>
+        <ul class="list">
+          <li>Transaction ingestion API</li>
+          <li>AML Domain Adapter</li>
+          <li>Evidence/state manifest</li>
+          <li>Candidate-fact interface</li>
+          <li>Policy Interpreter</li>
+          <li>Decision Kernel</li>
+          <li>Action executor</li>
+          <li>Immutable audit log</li>
+          <li>Replay harness</li>
+        </ul>
+      </div>
+      <div class="path-box deferred">
+        <div class="path-title">Deferred: Broader Ambitions</div>
+        <ul class="list">
+          <li>Universal risk score</li>
+          <li>General-purpose graph platform</li>
+          <li>Autonomous compliance officer</li>
+          <li>Foundation-model reasoning engine</li>
+          <li>Broad connector catalog</li>
+          <li>Full simulation/optimization suite</li>
+          <li>Multi-industry product suite</li>
+          <li>Full case-management replacement</li>
+        </ul>
+      </div>
+    </div>
+    <div class="bottom-bar">
+      <span>Rule</span> Build the complete vertical slice that must work before broader platform ambitions are funded.
+    </div>
+  </div>
+</body>
+</html>

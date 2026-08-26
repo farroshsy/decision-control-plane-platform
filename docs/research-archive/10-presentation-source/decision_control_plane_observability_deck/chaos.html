@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 48px 72px 0 72px; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 42px; line-height: 1.08; margin: 12px 0 0 0; letter-spacing: -1px; }
+    .thesis { font-size: 20px; color: #475569; margin-top: 12px; max-width: 1000px; }
+    
+    .summary-bar { display: flex; align-items: center; margin-top: 36px; padding-bottom: 8px; border-bottom: 2px solid #0A1128; }
+    .summary-metric { font-size: 24px; font-weight: 800; color: #D90429; letter-spacing: 1px; margin-right: 24px; }
+    .summary-text { font-size: 18px; color: #0A1128; font-weight: 700; }
+    
+    .table { display: flex; flex-direction: column; margin-top: 12px; }
+    .row { display: flex; flex-direction: row; border-bottom: 1px solid #CBD5E1; padding: 12px 0; align-items: flex-start; }
+    .col-fault { width: 35%; padding-right: 20px; }
+    .col-alert { width: 30%; padding-right: 20px; }
+    .col-outcome { width: 35%; }
+    
+    .header-row { font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; color: #64748B; padding-bottom: 12px; border-bottom: 1px solid #0A1128; margin-top: 16px; display: flex; flex-direction: row; }
+    
+    .fault-title { font-size: 20px; font-weight: 700; color: #0A1128; margin-bottom: 4px; }
+    .fault-desc { font-size: 16px; color: #475569; line-height: 1.35; }
+    
+    .alert-name { font-size: 18px; font-family: monospace; font-weight: 700; color: #00509E; margin-bottom: 4px; }
+    .alert-sev { font-size: 14px; font-weight: 800; color: #D90429; text-transform: uppercase; letter-spacing: 1px; }
+    .alert-sev.high { color: #EAB308; } /* Using a dark yellow/orange for High, Red for Critical */
+    
+    .outcome-text { font-size: 17px; color: #334155; line-height: 1.4; }
+    .outcome-text strong { color: #0A1128; }
+    
+    .footer { margin-top: auto; border-top: 1px solid #CBD5E1; padding-top: 12px; padding-bottom: 18px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="kicker">04 / Chaos Engineering</div>
+    <h1>Alerting and chaos engineering</h1>
+    <div class="thesis">We prove alert routing and dashboard visibility using an observability chaos harness, injecting simulated telemetry faults to validate operator response before a real incident.</div>
+    
+    <div class="summary-bar">
+      <div class="summary-metric">4/4 SCENARIOS PASS</div>
+      <div class="summary-text">Deterministic observability chaos simulation validated alert routing and operator response thresholds.</div>
+    </div>
+    
+    <div class="header-row">
+      <div class="col-fault">Injected Telemetry Fault</div>
+      <div class="col-alert">Triggered Alert Rule</div>
+      <div class="col-outcome">Validation Outcome</div>
+    </div>
+    
+    <div class="table">
+      <div class="row">
+        <div class="col-fault">
+          <div class="fault-title">Split-brain signal</div>
+          <div class="fault-desc">Simulated dual-authority writes.</div>
+        </div>
+        <div class="col-alert">
+          <div class="alert-name">DCPSplitBrainAccept</div>
+          <div class="alert-sev" style="color: #D90429;">Critical (0s delay)</div>
+        </div>
+        <div class="col-outcome">
+          <div class="outcome-text">Dashboard spike visible. Operator acknowledged in <strong>&lt; 60s</strong>.</div>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="col-fault">
+          <div class="fault-title">Replication lag spike</div>
+          <div class="fault-desc">Simulated RPO budget breach.</div>
+        </div>
+        <div class="col-alert">
+          <div class="alert-name">DCPRPOBreached</div>
+          <div class="alert-sev" style="color: #B45309;">High (45s delay)</div>
+        </div>
+        <div class="col-outcome">
+          <div class="outcome-text">Dashboard visible. Operator acknowledged in <strong>&lt; 120s</strong>.</div>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="col-fault">
+          <div class="fault-title">Policy evaluation delay</div>
+          <div class="fault-desc">Simulated p99 admission latency breach.</div>
+        </div>
+        <div class="col-alert">
+          <div class="alert-name">DCPAdmissionLatencyHigh</div>
+          <div class="alert-sev" style="color: #B45309;">High (5m delay)</div>
+        </div>
+        <div class="col-outcome">
+          <div class="outcome-text">Dashboard visible. Operator acknowledged in <strong>&lt; 360s</strong>.</div>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="col-fault">
+          <div class="fault-title">Telemetry blackout</div>
+          <div class="fault-desc">Simulated Prometheus scrape failure.</div>
+        </div>
+        <div class="col-alert">
+          <div class="alert-name">PrometheusTargetDown</div>
+          <div class="alert-sev" style="color: #B45309;">High (60s delay)</div>
+        </div>
+        <div class="col-outcome">
+          <div class="outcome-text">Dashboard visible. Operator acknowledged in <strong>&lt; 120s</strong>.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Decision Control Plane · Observability Chaos</div>
+      <div>04</div>
+    </div>
+  </div>
+</body>
+</html>

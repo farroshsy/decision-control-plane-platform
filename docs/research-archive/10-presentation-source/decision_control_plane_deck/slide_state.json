@@ -1,0 +1,123 @@
+{
+  "project_info": {
+    "title": "Decision Control Plane",
+    "created": 1787536619.127,
+    "last_updated": 1787537118.286,
+    "total_slides": 11
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "product_thesis",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "first_wedge",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "architecture",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "interaction_sequence",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "kernel_boundary",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "mvp_scope",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "validation_gates",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "scorecard",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "bottleneck",
+      "state": "edited",
+      "pageNum": 10
+    },
+    {
+      "id": "roadmap",
+      "state": "edited",
+      "pageNum": 11
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Decision Control Plane",
+      "summary": "The concrete product that turns the Decision Infrastructure theory into a dependable first release: a financial-crime screening control plane."
+    },
+    {
+      "id": "product_thesis",
+      "title": "What we are making",
+      "summary": "Define the product promise: a fast, governed, replayable answer to whether a high-consequence transaction may proceed."
+    },
+    {
+      "id": "first_wedge",
+      "title": "The first wedge is financial-crime screening",
+      "summary": "Show why transaction screening is the right proving ground: it stresses identity, time, policy, action, audit, and resilience at once."
+    },
+    {
+      "id": "architecture",
+      "title": "System architecture: three planes, one decision artifact",
+      "summary": "Present the detailed Decision Control Plane architecture using the rendered component diagram."
+    },
+    {
+      "id": "interaction_sequence",
+      "title": "One transaction, end to end",
+      "summary": "Present the component interaction sequence from transaction proposal through policy evaluation, action acknowledgement, audit, and reassessment."
+    },
+    {
+      "id": "kernel_boundary",
+      "title": "The kernel stays small and stable",
+      "summary": "Separate the invariant Decision Kernel from the AML Domain Adapter and replaceable engines."
+    },
+    {
+      "id": "mvp_scope",
+      "title": "The minimum valuable product",
+      "summary": "Show the complete vertical slice that must work before broader platform ambitions are funded."
+    },
+    {
+      "id": "validation_gates",
+      "title": "The 90-day MVP validation plan",
+      "summary": "Present the four validation gates and the evidence required to proceed, narrow, or stop."
+    },
+    {
+      "id": "scorecard",
+      "title": "Success is measured in proof, not activity",
+      "summary": "Present the metrics and hard thresholds for replay, audit, latency, resilience, operational value, and reuse."
+    },
+    {
+      "id": "bottleneck",
+      "title": "The stress test changes the architecture",
+      "summary": "Show the exact bottleneck result: audit commit saturates before the Policy Interpreter, so durable logging must scale independently."
+    },
+    {
+      "id": "roadmap",
+      "title": "Build the kernel before the platform",
+      "summary": "Close with the staged roadmap and RoR-based sequencing from falsifiers to productization.",
+      "image_plan": "/home/ubuntu/decision_infrastructure_architecture.png - Slide 11 details the reference architecture control loop matching the system diagram in Image 1"
+    }
+  ]
+}

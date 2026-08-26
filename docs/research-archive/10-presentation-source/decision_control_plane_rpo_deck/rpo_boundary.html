@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><style>
+*{box-sizing:border-box}body{margin:0}
+.slide-container{width:1280px;min-height:720px;background:#F8FAFC;color:#0A1128;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column}
+.content{padding:50px 72px 0 72px;min-height:720px;display:flex;flex-direction:column}
+.kicker{font-size:14px;letter-spacing:2.5px;text-transform:uppercase;font-weight:700;color:#00509E}
+h1{font-size:42px;line-height:1.08;margin:12px 0 0 0;letter-spacing:-1px}
+.thesis{font-size:20px;color:#475569;margin-top:12px;max-width:930px}
+.spectrum{display:flex;flex-direction:row;justify-content:space-between;margin-top:54px}
+.state{width:31%;border-top:4px solid #00509E;padding-top:18px;min-height:248px}
+.state.degraded{border-top-color:#64748B}
+.state.unsafe{border-top-color:#D90429}
+.state-label{font-size:14px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:#00509E}
+.unsafe .state-label{color:#D90429}
+.state-title{font-size:30px;font-weight:800;margin-top:14px}
+.state-copy{font-size:18px;line-height:1.45;color:#334155;margin-top:14px}
+/* Removed auto margin so decision sits directly after content instead of being pushed to bottom */
+.decision{margin-top:18px;border-top:2px solid #0A1128;padding-top:18px;padding-bottom:12px;font-size:21px;font-weight:700}
+.decision span{color:#D90429}
+.footer{border-top:1px solid #CBD5E1;padding-top:10px;padding-bottom:4px;font-size:13px;color:#64748B;display:flex;justify-content:space-between}
+</style></head><body><div class="slide-container"><div class="content"><div class="kicker">01 / RPO admission</div><h1>Why RPO is a decision boundary</h1><div class="thesis">Freshness changes what a transaction screening system is allowed to do.</div><div class="spectrum"><div class="state"><div class="state-label">State 01 · Within budget</div><div class="state-title">Fresh</div><div class="state-copy">Ownership is valid, policy and state epochs match, trace is durable, and remote acknowledgement remains within the tenant RPO.</div></div><div class="state degraded"><div class="state-label">State 02 · Budget pressured</div><div class="state-title">Degraded</div><div class="state-copy">The system can continue bounded work, but must expose uncertainty. Risky decisions are held, retried, or routed for review.</div></div><div class="state unsafe"><div class="state-label">State 03 · Budget breached</div><div class="state-title">Unsafe</div><div class="state-copy">Allow-like side effects stop. The outcome becomes hold, reject, retry, or fence until authority and durability are re-established.</div></div></div><div class="decision">The system must never turn stale state into a silent <span>allow.</span></div><div class="footer"><div>Decision Control Plane · RPO is a policy input</div><div>01</div></div></div></div></body></html>

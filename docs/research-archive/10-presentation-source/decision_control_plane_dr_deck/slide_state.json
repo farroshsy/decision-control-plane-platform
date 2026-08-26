@@ -1,0 +1,92 @@
+{
+  "project_info": {
+    "title": "Decision Control Plane: Resilience and Leverage",
+    "created": 1787539854.72,
+    "last_updated": 1787540344.688,
+    "total_slides": 8
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "failure_model",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "failover_protocol",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "simulation_results",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "runbook",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "mvp_gates",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "leverage",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "decision",
+      "state": "edited",
+      "pageNum": 8
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Decision Control Plane: Resilience and Leverage",
+      "summary": "Executive decision: build a governed, replayable control plane and prove its resilience before scaling."
+    },
+    {
+      "id": "failure_model",
+      "title": "What happens when regions disagree?",
+      "summary": "The core failure mode is not downtime alone; it is dual authority, duplicate action, and unverifiable history."
+    },
+    {
+      "id": "failover_protocol",
+      "title": "The active-active failover protocol",
+      "summary": "Show normal service, partition, fencing, takeover, and heal/reconcile with ownership epochs and idempotent actions."
+    },
+    {
+      "id": "simulation_results",
+      "title": "Simulation results: safe degradation worked",
+      "summary": "Show continuous partition-injection results and key safety outcomes from the deterministic harness."
+    },
+    {
+      "id": "runbook",
+      "title": "Operational runbook: who does what",
+      "summary": "Summarize tenant migration, key rotation, partition response, and recurring DR drill responsibilities."
+    },
+    {
+      "id": "mvp_gates",
+      "title": "Production gates before scale",
+      "summary": "Define the hard validation gates: no split brain, no duplicate actions, RPO behavior, replay, isolation, and RTO."
+    },
+    {
+      "id": "leverage",
+      "title": "How to leverage the work",
+      "summary": "Turn the research into a 90-day lighthouse, reusable kernel, adapter SDK, assurance suite, and second-domain expansion."
+    },
+    {
+      "id": "decision",
+      "title": "The executive decision",
+      "summary": "Fund proof now, scale only after measured evidence, and keep the kernel stable while domains remain pluggable."
+    }
+  ]
+}

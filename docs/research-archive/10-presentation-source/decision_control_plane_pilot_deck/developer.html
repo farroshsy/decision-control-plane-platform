@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 48px 72px 0 72px; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 42px; line-height: 1.08; margin: 12px 0 0 0; letter-spacing: -1px; }
+    .thesis { font-size: 20px; color: #475569; margin-top: 12px; max-width: 1000px; }
+    
+    .columns { display: flex; flex-direction: row; justify-content: space-between; margin-top: 32px; }
+    .column { width: 47%; display: flex; flex-direction: column; gap: 16px; }
+    
+    .step { display: flex; flex-direction: row; border-top: 1px solid #CBD5E1; padding-top: 12px; }
+    .step:first-child { border-top: 2px solid #0A1128; }
+    
+    .step-num { width: 12%; font-size: 18px; font-weight: 800; color: #D90429; letter-spacing: 1px; }
+    .step-content { width: 88%; }
+    .step-title { font-size: 20px; font-weight: 700; color: #0A1128; margin-bottom: 4px; }
+    .step-desc { font-size: 16px; line-height: 1.35; color: #334155; }
+    
+    .footer { margin-top: auto; border-top: 1px solid #CBD5E1; padding-top: 10px; padding-bottom: 12px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="kicker">04 / Developer Onboarding</div>
+    <h1>The customer developer path</h1>
+    <div class="thesis">The SDK is the safety boundary. It validates tenant context, deadlines, and idempotency before any network call is made.</div>
+    
+    <div class="columns">
+      <div class="column">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <div class="step-title">Install &amp; Compile</div>
+            <div class="step-desc">Register schema package and enable strict type checking.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <div class="step-title">Sandbox Fixtures</div>
+            <div class="step-desc">Send known fixtures and verify typed outcomes without side effects.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <div class="step-title">Telemetry Integration</div>
+            <div class="step-desc">Connect request, decision, and action IDs to customer observability.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-content">
+            <div class="step-title">Adapter Conformance</div>
+            <div class="step-desc">Pass canonicalization, provenance, and negative isolation tests.</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="column">
+        <div class="step">
+          <div class="step-num">05</div>
+          <div class="step-content">
+            <div class="step-title">Historical Replay</div>
+            <div class="step-desc">Compare DCP output with incumbent output on a redacted corpus.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">06</div>
+          <div class="step-content">
+            <div class="step-title">Shadow Production</div>
+            <div class="step-desc">Send live requests in shadow-only mode and classify all differences.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">07</div>
+          <div class="step-content">
+            <div class="step-title">Action Dry Run</div>
+            <div class="step-desc">Verify idempotency and reconciliation against a non-executing endpoint.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">08</div>
+          <div class="step-content">
+            <div class="step-title">Canary Authority</div>
+            <div class="step-desc">Enable DCP authority for a bounded cohort with a tested rollback path.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Decision Control Plane · SDK Integration</div>
+      <div>04</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build the kernel before the platform</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .slide-container {
+    width: 1280px;
+    min-height: 720px;
+    background: #ffffff;
+    color: #0A1128;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 56px 62px 0 62px;
+  }
+  .eyebrow {
+    font: 700 12px "Courier New", monospace;
+    letter-spacing: 2px;
+    color: #00509E;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: 43px;
+    line-height: 1.04;
+    letter-spacing: -1.5px;
+    margin: 0 0 24px 0;
+  }
+  .arch-image {
+    width: 1154px;
+    height: 140px;
+    object-fit: cover;
+    object-position: center 20%;
+    border: 1px solid #0A1128;
+    margin-bottom: 24px;
+    display: block;
+  }
+  .grid-3x2 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    border-top: 1px solid #0A1128;
+    border-left: 1px solid #0A1128;
+  }
+  .cell {
+    border-right: 1px solid #0A1128;
+    border-bottom: 1px solid #0A1128;
+    padding: 20px 24px;
+    min-height: 140px;
+  }
+  .phase-num {
+    font: 700 20px "Courier New", monospace;
+    color: #D90429;
+    margin-bottom: 8px;
+  }
+  .phase-title {
+    font: 700 16px Arial, Helvetica, sans-serif;
+    color: #0A1128;
+    margin-bottom: 8px;
+  }
+  .phase-desc {
+    font: 400 14px/1.4 "Courier New", monospace;
+    color: #334155;
+  }
+</style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="eyebrow">10 / Roadmap</div>
+    <h1>Build the kernel before the platform</h1>
+    
+    <img src="/home/ubuntu/decision_infrastructure_architecture.png" class="arch-image" alt="Architecture Reference">
+    
+    <div class="grid-3x2">
+      <div class="cell">
+        <div class="phase-num">Phase 0</div>
+        <div class="phase-title">Freeze claim & falsifiers</div>
+        <div class="phase-desc">Define schemas, policy semantics, and explicit failure modes. (RoR: 4.70)</div>
+      </div>
+      <div class="cell">
+        <div class="phase-num">Phase 1</div>
+        <div class="phase-title">Build replayable kernel</div>
+        <div class="phase-desc">Implement immutable audit, evidence snapshots, and deterministic replay. (RoR: 4.55)</div>
+      </div>
+      <div class="cell">
+        <div class="phase-num">Phase 2</div>
+        <div class="phase-title">AML vertical slice</div>
+        <div class="phase-desc">Transaction flow from adapter to policy to action. (RoR: 3.15 - Proving ground)</div>
+      </div>
+      <div class="cell">
+        <div class="phase-num">Phase 3</div>
+        <div class="phase-title">Production validation</div>
+        <div class="phase-desc">Meet latency, throughput, and resilience targets under realistic load.</div>
+      </div>
+      <div class="cell">
+        <div class="phase-num">Phase 4</div>
+        <div class="phase-title">Generalization decision</div>
+        <div class="phase-desc">Add a second domain adapter to test kernel reusability without semantic forks.</div>
+      </div>
+      <div class="cell">
+        <div class="phase-num">Phase 5</div>
+        <div class="phase-title">Productize platform</div>
+        <div class="phase-desc">Release adapter SDKs, policy tools, and deployment profiles.</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 48px 72px 0 72px; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 42px; line-height: 1.08; margin: 12px 0 0 0; letter-spacing: -1px; }
+    .thesis { font-size: 20px; color: #475569; margin-top: 12px; max-width: 900px; }
+    .grid { display: flex; flex-wrap: wrap; justify-content: space-between; margin-top: 20px; }
+    .grid-item { width: 47%; border-top: 2px solid #0A1128; padding-top: 12px; margin-bottom: 20px; }
+    .item-title { font-size: 26px; font-weight: 700; margin-bottom: 12px; }
+    .item-desc { font-size: 18px; line-height: 1.45; color: #334155; min-height: 64px; }
+    .item-owner { font-size: 16px; font-weight: 700; color: #D90429; margin-top: 16px; letter-spacing: 0.5px; text-transform: uppercase; }
+    .footer { margin-top: 20px; border-top: 1px solid #CBD5E1; padding-top: 8px; padding-bottom: 8px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="kicker">04 / Operational runbook</div>
+    <h1>High-consequence operations require explicit authority</h1>
+    <div class="thesis">The runbook defines who approves, who executes, and what evidence is required for the four most critical platform operations.</div>
+    
+    <div class="grid">
+      <div class="grid-item">
+        <div class="item-title">Tenant Migration</div>
+        <div class="item-desc">Move a tenant between regions or isolation tiers. Requires shadow execution, replay comparison, dual-write reconciliation, and a tested rollback window.</div>
+        <div class="item-owner">Owner: Tenant Owner &amp; Platform Lead</div>
+      </div>
+      <div class="grid-item">
+        <div class="item-title">Key Rotation</div>
+        <div class="item-desc">Rotate cryptographic keys without losing history. Requires rewrapping data in bounded batches, verifying reads, and retaining old keys for legal holds.</div>
+        <div class="item-owner">Owner: Security Owner</div>
+      </div>
+      <div class="grid-item">
+        <div class="item-title">Partition Response</div>
+        <div class="item-desc">Handle regional impairment or network splits. Requires fencing the stale epoch, holding decisions after RPO breach, and reconciling actions upon healing.</div>
+        <div class="item-owner">Owner: Incident Commander &amp; Compliance</div>
+      </div>
+      <div class="grid-item">
+        <div class="item-title">Disaster Recovery Drills</div>
+        <div class="item-desc">Prove resilience claims with evidence. Includes monthly traffic evacuation, quarterly regional rebuilds, and semiannual split-brain game days.</div>
+        <div class="item-owner">Owner: Platform Lead &amp; Auditor</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Decision Control Plane · Operational Runbook</div>
+      <div>04</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 48px 72px 0 72px; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 42px; line-height: 1.08; margin: 12px 0 0 0; letter-spacing: -1px; }
+    .thesis { font-size: 20px; color: #475569; margin-top: 12px; max-width: 1000px; }
+    
+    .flow-container { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-top: 48px; padding: 20px 0; border-top: 2px solid #0A1128; border-bottom: 1px solid #CBD5E1; }
+    .flow-box { background: #E2E8F0; border: 2px solid #00509E; padding: 16px 12px; text-align: center; font-weight: 700; font-size: 16px; color: #0A1128; width: 14%; border-radius: 0; }
+    .flow-arrow { color: #D90429; font-size: 24px; font-weight: 800; }
+    
+    .details { display: flex; flex-direction: row; justify-content: space-between; margin-top: 36px; }
+    .detail-col { width: 47%; }
+    .detail-title { font-size: 22px; font-weight: 800; color: #0A1128; margin-bottom: 12px; }
+    .detail-text { font-size: 18px; line-height: 1.45; color: #334155; }
+    .detail-text span { font-weight: 700; color: #00509E; }
+    
+    .privacy-rule { margin-top: 24px; padding-left: 16px; border-left: 4px solid #D90429; }
+    .privacy-title { font-size: 16px; font-weight: 800; color: #D90429; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    
+    .footer { margin-top: auto; border-top: 1px solid #CBD5E1; padding-top: 12px; padding-bottom: 22px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="kicker">02 / Telemetry Architecture</div>
+    <h1>Consistent trace propagation</h1>
+    <div class="thesis">Metrics provide aggregate health; traces reconstruct one request; immutable events provide authoritative history. Context must flow unbroken through the entire path.</div>
+    
+    <div class="flow-container">
+      <div class="flow-box">Adapter<br>Ingress</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box">Policy<br>Evaluation</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box">RPO<br>Admission</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box">Decision<br>Append</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box">Action<br>Submit</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box">Audit / XAI<br>Package</div>
+    </div>
+    
+    <div class="details">
+      <div class="detail-col">
+        <div class="detail-title">Required Context Tags</div>
+        <div class="detail-text">
+          Every span and metric must carry: <span>tenant_id</span>, <span>request_id</span>, <span>decision_id</span>, <span>idempotency_key_hash</span>, <span>ownership_epoch</span>, <span>policy_version</span>, and <span>region</span>.
+        </div>
+      </div>
+      <div class="detail-col">
+        <div class="detail-title">The Privacy Boundary</div>
+        <div class="detail-text">
+          <div class="privacy-rule">
+            <div class="privacy-title">Strict Isolation</div>
+            Sensitive payload data remains entirely within the evidence boundary. It never leaks into metric labels, log streams, or unencrypted trace payloads.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Decision Control Plane · Telemetry Architecture</div>
+      <div>02</div>
+    </div>
+  </div>
+</body>
+</html>

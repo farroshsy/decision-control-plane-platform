@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 52px 72px 0 72px; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 44px; line-height: 1.08; letter-spacing: -1.2px; margin: 14px 0 0 0; }
+    .thesis { font-size: 21px; line-height: 1.35; color: #475569; margin-top: 12px; max-width: 900px; }
+    .rule { height: 4px; width: 84px; background: #D90429; margin-top: 18px; }
+    .columns { display: flex; flex-direction: row; justify-content: space-between; min-height: 260px; padding-top: 30px; }
+    .column { width: 31%; border-top: 2px solid #0A1128; padding-top: 12px; }
+    .num { font-size: 15px; letter-spacing: 2px; color: #D90429; font-weight: 800; }
+    h2 { font-size: 26px; margin: 10px 0 0 0; line-height: 1.12; }
+    .body { font-size: 18px; line-height: 1.42; color: #334155; margin-top: 12px; }
+    .bottom { margin-top: auto; border-top: 1px solid #CBD5E1; padding-top: 12px; padding-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .bottom strong { font-size: 22px; }
+    .bottom span { color: #D90429; }
+    .page { font-size: 14px; color: #64748B; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="kicker">01 / Failure model</div>
+    <h1>What happens when regions disagree?</h1>
+    <div class="thesis">The hardest failure is not downtime. It is allowing two regions to believe they are authoritative at the same time.</div>
+    <div class="rule"></div>
+    <div class="columns">
+      <div class="column">
+        <div class="num">01 — DUAL AUTHORITY</div>
+        <h2>Split brain</h2>
+        <div class="body">Two regions accept writes for the same tenant or decision aggregate. The system can no longer prove which policy state or ownership epoch was authoritative.</div>
+      </div>
+      <div class="column">
+        <div class="num">02 — SIDE EFFECTS</div>
+        <h2>Duplicate action</h2>
+        <div class="body">A retry crosses the failover boundary and issues a second hold, release, block, or report. A technical retry becomes a real-world duplicate.</div>
+      </div>
+      <div class="column">
+        <div class="num">03 — PROOF LOSS</div>
+        <h2>Unverifiable history</h2>
+        <div class="body">Events, evidence, or action outcomes are missing or mixed across versions. The decision may have been correct, but the organization cannot reconstruct it.</div>
+      </div>
+    </div>
+    <div class="bottom">
+      <strong>Safe design principle: <span>serve locally, fence globally, reconcile explicitly.</span></strong>
+      <div class="page">DECISION CONTROL PLANE</div>
+    </div>
+  </div>
+</body>
+</html>

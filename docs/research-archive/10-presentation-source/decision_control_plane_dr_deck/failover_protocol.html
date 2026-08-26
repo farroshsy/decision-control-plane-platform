@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    .slide-container { width: 1280px; min-height: 720px; background: #F8FAFC; color: #0A1128; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; }
+    /* Keep the title's upper padding intact (48px) per constraints */
+    .content { padding: 48px 72px 0 72px; min-height: 720px; display: flex; flex-direction: column; }
+    .kicker { font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; color: #00509E; }
+    h1 { font-size: 42px; line-height: 1.08; margin: 12px 0 0 0; letter-spacing: -1px; }
+    .thesis { font-size: 20px; color: #475569; margin-top: 12px; }
+    .visual-wrap { display: flex; justify-content: center; padding-top: 18px; }
+    /* Reduced visual height and reduced top gap to recover vertical space */
+    .visual { width: 1136px; height: 342px; object-fit: contain; }
+    .protocol { display: flex; flex-direction: row; justify-content: space-between; border-top: 2px solid #0A1128; margin-top: 18px; padding-top: 12px; }
+    .step { width: 24%; font-size: 16px; line-height: 1.35; color: #334155; }
+    .step strong { display: block; color: #0A1128; font-size: 18px; margin-bottom: 5px; }
+    .step span { color: #D90429; font-weight: 800; }
+    .footer { margin-top: auto; border-top: 1px solid #CBD5E1; padding-top: 10px; padding-bottom: 12px; font-size: 13px; color: #64748B; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="content">
+      <div class="kicker">02 / Failover protocol</div>
+      <h1>Active-active is safe only when authority is explicit</h1>
+      <div class="thesis">Both regions may serve. Only one ownership epoch may write for a tenant at a time.</div>
+      <div class="visual-wrap"><img class="visual" src="/home/ubuntu/decision_control_plane_dr_failover.png" alt="Active-active failover sequence" /></div>
+      <div class="protocol">
+        <div class="step"><strong><span>01</span> Serve</strong>Local compiled policy, bounded state, durable compact trace.</div>
+        <div class="step"><strong><span>02</span> Fence</strong>Stop stale-epoch writes when replication or quorum is unsafe.</div>
+        <div class="step"><strong><span>03</span> Take over</strong>Advance the tenant epoch and make actions idempotent.</div>
+        <div class="step"><strong><span>04</span> Reconcile</strong>Replay missing events, compare hashes, then fail back.</div>
+      </div>
+      <div class="footer"><div>Decision Control Plane · verified local diagram</div><div>02</div></div>
+    </div>
+  </div>
+</body>
+</html>
