@@ -262,6 +262,12 @@ export const investigationComments = mysqlTable(
     tenantId: varchar("tenantId", { length: 64 }).notNull(),
     caseId: varchar("caseId", { length: 64 }).notNull(),
     body: text("body").notNull(),
+    visibility: mysqlEnum("visibility", ["tenant_members", "operator_team", "platform_compliance"]).default("tenant_members").notNull(),
+    redactionState: mysqlEnum("redactionState", ["active", "redacted"]).default("active").notNull(),
+    redactionReason: text("redactionReason"),
+    originalBodyHash: varchar("originalBodyHash", { length: 128 }),
+    redactedByUserId: int("redactedByUserId"),
+    redactedAt: timestamp("redactedAt"),
     createdByUserId: int("createdByUserId").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
@@ -296,7 +302,7 @@ export const investigationActivities = mysqlTable(
     id: varchar("id", { length: 64 }).primaryKey(),
     tenantId: varchar("tenantId", { length: 64 }).notNull(),
     caseId: varchar("caseId", { length: 64 }).notNull(),
-    activityKind: mysqlEnum("activityKind", ["case_created", "outcome_recorded", "assignment_recorded", "escalation_queued", "escalation_acknowledged", "comment_added", "attachment_added"]).notNull(),
+    activityKind: mysqlEnum("activityKind", ["case_created", "outcome_recorded", "assignment_recorded", "escalation_queued", "escalation_acknowledged", "comment_added", "comment_redacted", "attachment_added", "team_view_created", "sla_reminder_recorded"]).notNull(),
     summary: varchar("summary", { length: 280 }).notNull(),
     detailJson: text("detailJson").notNull(),
     actorUserId: int("actorUserId").notNull(),
@@ -322,6 +328,69 @@ export const investigationSavedViews = mysqlTable(
   table => [
     uniqueIndex("investigation_saved_views_owner_name_idx").on(table.tenantId, table.ownerUserId, table.name),
     index("investigation_saved_views_tenant_owner_idx").on(table.tenantId, table.ownerUserId, table.updatedAt),
+  ]
+);
+
+export const investigationTeamViews = mysqlTable(
+  "investigationTeamViews",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    filterJson: text("filterJson").notNull(),
+    allowedRolesJson: text("allowedRolesJson").notNull(),
+    status: mysqlEnum("status", ["active", "retired"]).default("active").notNull(),
+    createdByUserId: int("createdByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    uniqueIndex("investigation_team_views_tenant_name_idx").on(table.tenantId, table.name),
+    index("investigation_team_views_tenant_idx").on(table.tenantId, table.status, table.updatedAt),
+  ]
+);
+
+export const investigationSlaReminderPolicies = mysqlTable(
+  "investigationSlaReminderPolicies",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    cadenceCron: varchar("cadenceCron", { length: 64 }).notNull(),
+    recipientMode: mysqlEnum("recipientMode", ["assigned_investigator"]).default("assigned_investigator").notNull(),
+    operationalOwnerRole: mysqlEnum("operationalOwnerRole", ["platform_operator"]).default("platform_operator").notNull(),
+    status: mysqlEnum("status", ["draft", "active", "paused"]).default("draft").notNull(),
+    scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+    lastEvaluatedAt: timestamp("lastEvaluatedAt"),
+    createdByUserId: int("createdByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("sla_reminder_policies_tenant_idx").on(table.tenantId, table.status, table.updatedAt),
+    index("sla_reminder_policies_task_idx").on(table.scheduleCronTaskUid),
+  ]
+);
+
+export const investigationSlaReminders = mysqlTable(
+  "investigationSlaReminders",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    policyId: varchar("policyId", { length: 64 }).notNull(),
+    caseId: varchar("caseId", { length: 64 }).notNull(),
+    assignmentId: varchar("assignmentId", { length: 64 }).notNull(),
+    recipientUserId: int("recipientUserId").notNull(),
+    serviceLevelState: mysqlEnum("serviceLevelState", ["on_track", "due_soon", "overdue"]).notNull(),
+    dueAt: timestamp("dueAt").notNull(),
+    evaluationHour: varchar("evaluationHour", { length: 32 }).notNull(),
+    status: mysqlEnum("status", ["open", "acknowledged"]).default("open").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    uniqueIndex("sla_reminders_hourly_dedupe_idx").on(table.policyId, table.assignmentId, table.evaluationHour),
+    index("sla_reminders_recipient_idx").on(table.tenantId, table.recipientUserId, table.status, table.createdAt),
+    index("sla_reminders_case_idx").on(table.tenantId, table.caseId, table.createdAt),
   ]
 );
 

@@ -95,7 +95,7 @@ pnpm check    # TypeScript without emitting files
 pnpm build    # Vite client build + bundled server build
 ```
 
-The latest knowledge-portal and investigation-lifecycle validation passed **36 tests across 11 Vitest files**, TypeScript checking, and the production build. Vite may warn that the client bundle exceeds its default 500 kB chunk guidance; the warning is non-blocking and should be addressed with deliberate code-splitting work rather than suppressed.
+The latest knowledge-portal and investigation-lifecycle validation passed **36 tests across 11 Vitest files**, TypeScript checking, and the production build. The current Operator Enablement release adds further focused policy coverage; final full-suite/build/browser validation is recorded in its release notes. Vite may warn that the client bundle exceeds its default 500 kB chunk guidance; the warning is non-blocking and should be addressed with deliberate code-splitting work rather than suppressed.
 
 ### Database changes
 
@@ -126,6 +126,8 @@ todo.md                  Durable implementation backlog
 | [`docs/capability-roadmap.md`](docs/capability-roadmap.md)                                               | Capability-led product roadmap and deliberate deferrals. |
 | [`docs/architecture-handbook.md`](docs/architecture-handbook.md)                                         | Layered architecture, safety separations, and process-model integration. |
 | [`docs/knowledge-portal-investigation-lifecycle-release-notes.md`](docs/knowledge-portal-investigation-lifecycle-release-notes.md) | Searchable portal, advanced queues, ownership, service-level, comments, attachments, and activity release. |
+| [`docs/operator-enablement-collaboration-plan.md`](docs/operator-enablement-collaboration-plan.md) | Selected operator-guidance, collaboration, and reminder scope with boundaries. |
+| [`docs/operator-enablement-governed-collaboration-release-notes.md`](docs/operator-enablement-governed-collaboration-release-notes.md) | Five-minute guide, governed comments/redaction, shared queues, and draft/deployment-gated SLA reminders. |
 | [`docs/validation-notes-caseflow.md`](docs/validation-notes-caseflow.md)                               | Browser and automated evidence for the investigation-case flow.                             |
 
 ### Complete research and presentation archive

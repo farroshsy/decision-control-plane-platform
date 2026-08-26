@@ -1,0 +1,30 @@
+export type TenantOperatorRole = "platform_operator" | "compliance_operator" | "customer_operator" | "developer" | "viewer";
+export type CommentVisibility = "tenant_members" | "operator_team" | "platform_compliance";
+
+export function commentVisibleToRole(visibility: CommentVisibility, role: TenantOperatorRole): boolean {
+  if (visibility === "tenant_members") return true;
+  if (visibility === "operator_team") return role !== "viewer";
+  return role === "platform_operator" || role === "compliance_operator";
+}
+
+export function canCreateCommentWithVisibility(role: TenantOperatorRole, visibility: CommentVisibility): boolean {
+  if (visibility === "tenant_members") return role !== "viewer";
+  if (visibility === "operator_team") return role !== "viewer";
+  return role === "platform_operator" || role === "compliance_operator";
+}
+
+export function canRedactComment(role: TenantOperatorRole): boolean {
+  return role === "platform_operator" || role === "compliance_operator";
+}
+
+export function teamViewVisibleToRole(allowedRoles: TenantOperatorRole[], role: TenantOperatorRole): boolean {
+  return allowedRoles.includes(role);
+}
+
+export function reminderEvaluationHour(now: Date): string {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours())).toISOString();
+}
+
+export function shouldCreateAssignedInvestigatorReminder(input: { assignedToUserId: number | null; dueAt: Date | null; serviceLevelState: "not_set" | "on_track" | "due_soon" | "overdue" }): boolean {
+  return input.assignedToUserId !== null && input.dueAt !== null && (input.serviceLevelState === "due_soon" || input.serviceLevelState === "overdue");
+}

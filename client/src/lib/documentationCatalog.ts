@@ -65,6 +65,22 @@ export const documentationCatalog: DocumentationEntry[] = [
     ],
   },
   {
+    id: "operator-enablement-collaboration",
+    title: "Operator Enablement and Governed Collaboration Plan",
+    kind: "Guide",
+    summary: "The five-minute operator path, role-visible comments, controlled redaction, shared tenant queues, and draft-only hourly in-app SLA reminder design.",
+    tags: ["getting started", "Observe Compare Interpret Act Retain", "comment visibility", "redaction", "shared queue", "SLA reminder"],
+    sourcePath: "docs/operator-enablement-collaboration-plan.md",
+    relatedIds: ["capability-roadmap", "investigation-workflow", "adr-investigation-ownership", "architecture-handbook"],
+    workspaceHref: "/app/getting-started",
+    workspaceLabel: "Open Getting Started",
+    sections: [
+      { heading: "Five-minute operator enablement", body: ["The guide translates the operating model into Observe → Compare → Interpret → Act → Retain and deep-links to the live tenant-scoped workspaces.", "A recommended next action is derived from visible case posture, but it remains a navigation aid rather than an automatic decision or execution trigger."] },
+      { heading: "Governed collaboration", body: ["Comments are role-visible according to tenant membership. Redaction preserves the row, original body hash, reason, actor, timestamp, and an immutable activity record instead of deleting evidence.", "Shared team queues are tenant-scoped and expose an explicit allowed-role policy. Personal saved views remain private."] },
+      { heading: "Hourly reminder boundary", body: ["The policy is fixed to hourly evaluation, named assigned investigators only, platform-operator ownership, and in-app/audit records only. Manual deterministic evaluation is supported before deployment.", "No background schedule is activated until a checkpoint exists, the site is deployed, and the user explicitly confirms activation. No email, SMS, Slack, Teams, webhook delivery, automatic escalation, or external delivery guarantee is claimed."] },
+    ],
+  },
+  {
     id: "bpmn-case-flow",
     title: "BPMN-Aware Investigation Case Flow",
     kind: "Guide",

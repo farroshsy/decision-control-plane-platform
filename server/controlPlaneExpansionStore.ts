@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "crypto";
+import { parse as parseCookieHeader } from "cookie";
 import { and, desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
@@ -18,6 +19,9 @@ import {
   investigationEscalations,
   investigationRecords,
   investigationSavedViews,
+  investigationSlaReminderPolicies,
+  investigationSlaReminders,
+  investigationTeamViews,
   mcpToolCalls,
   migrationRollouts,
   migrationSteps,
@@ -36,6 +40,9 @@ import { admitPilotAttachment, defaultEscalationTargetMinutes, serviceLevelPostu
 import { filterAndSortLifecycleQueue } from "./investigationQueuePolicy";
 import { assignmentActivity, attachmentActivity, commentActivity, escalationActivity } from "./investigationMutationActivityPolicy";
 import { storagePut } from "./storage";
+import { createHeartbeatJob, deleteHeartbeatJob } from "./_core/heartbeat";
+import { COOKIE_NAME } from "../shared/const";
+import { canCreateCommentWithVisibility, canRedactComment, commentVisibleToRole, reminderEvaluationHour, shouldCreateAssignedInvestigatorReminder, teamViewVisibleToRole, type CommentVisibility, type TenantOperatorRole } from "./operatorEnablementPolicy";
 
 type IntegrationScope = "read_only" | "replay_operator" | "rollout_operator";
 type ApiKeyRow = typeof integrationApiKeys.$inferSelect;
@@ -49,6 +56,18 @@ type InvestigationQueueInput = {
   escalationOnly?: boolean;
   sort?: "updated_desc" | "due_asc" | "service_level_asc" | "priority_desc" | "status_asc";
 };
+
+const collaborationRoles: TenantOperatorRole[] = ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"];
+const shareableQueueRoles: TenantOperatorRole[] = ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"];
+
+function commentContentHash(body: string): string {
+  return `sha256:${createHash("sha256").update(body, "utf8").digest("hex")}`;
+}
+
+function parseTeamRoles(value: string): TenantOperatorRole[] {
+  const parsed = safelyParse(value);
+  return Array.isArray(parsed) ? parsed.filter((role): role is TenantOperatorRole => typeof role === "string" && collaborationRoles.includes(role as TenantOperatorRole)) : [];
+}
 
 export const pilotMcpTools = [
   {
@@ -99,7 +118,7 @@ async function recordInvestigationActivity(
   input: {
     tenantId: string;
     caseId: string;
-    activityKind: "case_created" | "outcome_recorded" | "assignment_recorded" | "escalation_queued" | "escalation_acknowledged" | "comment_added" | "attachment_added";
+    activityKind: "case_created" | "outcome_recorded" | "assignment_recorded" | "escalation_queued" | "escalation_acknowledged" | "comment_added" | "comment_redacted" | "attachment_added" | "team_view_created" | "sla_reminder_recorded";
     summary: string;
     detail: Record<string, unknown>;
     actorUserId: number;
@@ -512,7 +531,7 @@ export async function recordRollbackRecommendation(userId: number, tenantId: str
 
 export async function investigationCaseDetail(userId: number, tenantId: string, input: { caseId?: string; decisionId?: string; rolloutId?: string }) {
   await ensurePilotArtifacts(userId, tenantId);
-  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
+  const membership = await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
   const db = await dbOrThrow();
   const baseConditions = [eq(investigationCases.tenantId, tenantId)];
   if (input.caseId) baseConditions.push(eq(investigationCases.id, input.caseId));
@@ -520,7 +539,7 @@ export async function investigationCaseDetail(userId: number, tenantId: string, 
   else if (input.rolloutId) baseConditions.push(eq(investigationCases.rolloutId, input.rolloutId));
   const investigationCase = (await db.select().from(investigationCases).where(and(...baseConditions)).orderBy(desc(investigationCases.updatedAt)).limit(1))[0];
   if (!investigationCase) throw new Error("No tenant-scoped investigation case was found for the requested context.");
-  const [evidence, traces, records, rollout, actions, assignments, escalations, manifests, retentionPolicies, comments, attachments, activities] = await Promise.all([
+  const [evidence, traces, records, rollout, actions, assignments, escalations, manifests, retentionPolicies, comments, attachments, activities, reminderPolicies, reminders] = await Promise.all([
     db.select().from(decisionEvidence).where(and(eq(decisionEvidence.tenantId, tenantId), eq(decisionEvidence.decisionId, investigationCase.decisionId))).orderBy(desc(decisionEvidence.createdAt)).limit(20),
     db.select().from(replayTraces).where(and(eq(replayTraces.tenantId, tenantId), eq(replayTraces.decisionId, investigationCase.decisionId))).orderBy(desc(replayTraces.createdAt)).limit(30),
     db.select().from(investigationRecords).where(eq(investigationRecords.tenantId, tenantId)).orderBy(desc(investigationRecords.createdAt)).limit(100),
@@ -533,6 +552,8 @@ export async function investigationCaseDetail(userId: number, tenantId: string, 
     db.select().from(investigationComments).where(and(eq(investigationComments.tenantId, tenantId), eq(investigationComments.caseId, investigationCase.id))).orderBy(desc(investigationComments.createdAt)).limit(100),
     db.select().from(investigationAttachments).where(and(eq(investigationAttachments.tenantId, tenantId), eq(investigationAttachments.caseId, investigationCase.id))).orderBy(desc(investigationAttachments.createdAt)).limit(100),
     db.select().from(investigationActivities).where(and(eq(investigationActivities.tenantId, tenantId), eq(investigationActivities.caseId, investigationCase.id))).orderBy(desc(investigationActivities.createdAt)).limit(200),
+    db.select().from(investigationSlaReminderPolicies).where(eq(investigationSlaReminderPolicies.tenantId, tenantId)).orderBy(desc(investigationSlaReminderPolicies.updatedAt)).limit(10),
+    db.select().from(investigationSlaReminders).where(and(eq(investigationSlaReminders.tenantId, tenantId), eq(investigationSlaReminders.caseId, investigationCase.id), eq(investigationSlaReminders.recipientUserId, userId))).orderBy(desc(investigationSlaReminders.createdAt)).limit(50),
   ]);
   return {
     investigationCase,
@@ -543,11 +564,15 @@ export async function investigationCaseDetail(userId: number, tenantId: string, 
     relatedToolCalls: actions.filter(action => action.inputJson.includes(investigationCase.decisionId)),
     assignments: assignments.map(assignment => ({ ...assignment, serviceLevel: serviceLevelPosture(assignment.serviceLevelTargetAt) })),
     escalations: escalations.map(escalation => ({ ...escalation, serviceLevel: serviceLevelPosture(escalation.serviceLevelTargetAt) })),
-    comments,
+    comments: comments
+      .filter(comment => commentVisibleToRole(comment.visibility as CommentVisibility, membership.role as TenantOperatorRole))
+      .map(comment => comment.redactionState === "redacted" ? { ...comment, body: "[Redacted under the governed comment workflow.]" } : comment),
     attachments,
     activities: activities.map(activity => ({ ...activity, details: safelyParse(activity.detailJson) })),
     manifests: manifests.map(manifest => ({ ...manifest, parsedManifest: safelyParse(manifest.manifestJson) })),
     retentionPolicy: retentionPolicies[0] ?? null,
+    reminderPolicies: reminderPolicies.map(policy => ({ ...policy, activationBoundary: policy.status === "draft" ? "Draft only. A platform operator may manually evaluate in-app records; hourly activation requires a deployed site and an explicit follow-up action." : "In-app reminder records only; no external notification, delivery guarantee, or automatic escalation is provided." })),
+    reminders,
     pilotOnly: true,
   };
 }
@@ -583,21 +608,24 @@ export async function updateInvestigationOutcome(userId: number, tenantId: strin
 
 export async function investigationCaseQueue(userId: number, tenantId: string, input: InvestigationQueueInput = {}) {
   await ensurePilotArtifacts(userId, tenantId);
-  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
+  const membership = await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
   const db = await dbOrThrow();
-  const [cases, assignments, escalations, comments, savedViews] = await Promise.all([
+  const [cases, assignments, escalations, comments, savedViews, teamViews] = await Promise.all([
     db.select().from(investigationCases).where(eq(investigationCases.tenantId, tenantId)).orderBy(desc(investigationCases.updatedAt)).limit(100),
     db.select().from(investigationCaseAssignments).where(eq(investigationCaseAssignments.tenantId, tenantId)).orderBy(desc(investigationCaseAssignments.updatedAt)).limit(200),
     db.select().from(investigationEscalations).where(eq(investigationEscalations.tenantId, tenantId)).orderBy(desc(investigationEscalations.updatedAt)).limit(200),
     db.select().from(investigationComments).where(eq(investigationComments.tenantId, tenantId)).orderBy(desc(investigationComments.createdAt)).limit(300),
     db.select().from(investigationSavedViews).where(and(eq(investigationSavedViews.tenantId, tenantId), eq(investigationSavedViews.ownerUserId, userId))).orderBy(desc(investigationSavedViews.updatedAt)).limit(30),
+    db.select().from(investigationTeamViews).where(and(eq(investigationTeamViews.tenantId, tenantId), eq(investigationTeamViews.status, "active"))).orderBy(desc(investigationTeamViews.updatedAt)).limit(30),
   ]);
   const latestAssignment = new Map<string, typeof assignments[number]>();
   assignments.forEach(assignment => { if (!latestAssignment.has(assignment.caseId)) latestAssignment.set(assignment.caseId, assignment); });
   const activeEscalations = new Map<string, typeof escalations[number][]>();
   escalations.filter(escalation => escalation.status === "queued" || escalation.status === "acknowledged").forEach(escalation => activeEscalations.set(escalation.caseId, [...(activeEscalations.get(escalation.caseId) ?? []), escalation]));
   const commentsByCase = new Map<string, string[]>();
-  comments.forEach(comment => commentsByCase.set(comment.caseId, [...(commentsByCase.get(comment.caseId) ?? []), comment.body]));
+  comments
+    .filter(comment => comment.redactionState === "active" && commentVisibleToRole(comment.visibility as CommentVisibility, membership.role as TenantOperatorRole))
+    .forEach(comment => commentsByCase.set(comment.caseId, [...(commentsByCase.get(comment.caseId) ?? []), comment.body]));
   const rows = cases.map(investigationCase => {
     const assignment = latestAssignment.get(investigationCase.id) ?? null;
     const active = activeEscalations.get(investigationCase.id) ?? [];
@@ -625,6 +653,9 @@ export async function investigationCaseQueue(userId: number, tenantId: string, i
     assignments: assignments.map(assignment => ({ ...assignment, serviceLevel: serviceLevelPosture(assignment.serviceLevelTargetAt) })),
     escalations: escalations.map(escalation => ({ ...escalation, serviceLevel: serviceLevelPosture(escalation.serviceLevelTargetAt) })),
     savedViews: savedViews.map(view => ({ ...view, filters: safelyParse(view.filterJson) })),
+    teamViews: teamViews
+      .map(view => ({ ...view, filters: safelyParse(view.filterJson), allowedRoles: parseTeamRoles(view.allowedRolesJson), ownership: { createdByUserId: view.createdByUserId, accessPolicy: "explicit_allowed_tenant_roles" as const } }))
+      .filter(view => teamViewVisibleToRole(view.allowedRoles, membership.role as TenantOperatorRole)),
     workload: Object.values(workload),
     appliedFilters: input,
     pilotOnly: true,
@@ -718,15 +749,128 @@ export async function deleteInvestigationSavedView(userId: number, tenantId: str
   return { ok: true as const, viewId, pilotOnly: true };
 }
 
-export async function addInvestigationComment(userId: number, tenantId: string, input: { caseId: string; body: string }) {
-  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer"]);
+export async function createInvestigationTeamView(userId: number, tenantId: string, input: { name: string; filters: InvestigationQueueInput; allowedRoles: TenantOperatorRole[] }) {
+  await assertTenantRole(userId, tenantId, ["platform_operator"]);
+  const allowedRoles = Array.from(new Set(input.allowedRoles)).filter(role => shareableQueueRoles.includes(role));
+  if (allowedRoles.length === 0) throw new Error("A team view must explicitly name at least one tenant role that may access it.");
+  const db = await dbOrThrow();
+  const id = `team_view_${nanoid(16)}`;
+  await db.insert(investigationTeamViews).values({ id, tenantId, name: input.name, filterJson: JSON.stringify(input.filters), allowedRolesJson: JSON.stringify(allowedRoles), createdByUserId: userId });
+  await recordInvestigationActivity(db, { tenantId, caseId: `team_view_${id}`, activityKind: "team_view_created", summary: "Shared investigation team view created.", detail: { teamViewId: id, name: input.name, allowedRoles, action: "created", accessPolicy: "explicit_allowed_tenant_roles" }, actorUserId: userId });
+  return { id, name: input.name, filters: input.filters, allowedRoles, status: "active" as const, pilotOnly: true };
+}
+
+export async function retireInvestigationTeamView(userId: number, tenantId: string, viewId: string) {
+  await assertTenantRole(userId, tenantId, ["platform_operator"]);
+  const db = await dbOrThrow();
+  const view = (await db.select().from(investigationTeamViews).where(and(eq(investigationTeamViews.id, viewId), eq(investigationTeamViews.tenantId, tenantId))).limit(1))[0];
+  if (!view) throw new Error("The shared team view is not available in this tenant scope.");
+  await db.update(investigationTeamViews).set({ status: "retired" }).where(and(eq(investigationTeamViews.id, viewId), eq(investigationTeamViews.tenantId, tenantId)));
+  await recordInvestigationActivity(db, { tenantId, caseId: `team_view_${view.id}`, activityKind: "team_view_created", summary: "Shared investigation team view retired.", detail: { teamViewId: view.id, name: view.name, allowedRoles: parseTeamRoles(view.allowedRolesJson), action: "retired", accessPolicy: "explicit_allowed_tenant_roles" }, actorUserId: userId });
+  return { ok: true as const, viewId, pilotOnly: true };
+}
+
+export async function redactInvestigationComment(userId: number, tenantId: string, input: { commentId: string; reason: string }) {
+  const membership = await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
+  if (!canRedactComment(membership.role as TenantOperatorRole)) throw new Error("The current tenant role cannot redact an investigation comment.");
+  const db = await dbOrThrow();
+  const comment = (await db.select().from(investigationComments).where(and(eq(investigationComments.id, input.commentId), eq(investigationComments.tenantId, tenantId))).limit(1))[0];
+  if (!comment) throw new Error("The investigation comment is not available in this tenant scope.");
+  if (comment.redactionState === "redacted") throw new Error("This investigation comment has already been redacted.");
+  const originalBodyHash = comment.originalBodyHash ?? commentContentHash(comment.body);
+  const redactedAt = new Date();
+  await db.update(investigationComments).set({ body: "[Redacted under the governed comment workflow.]", redactionState: "redacted", redactionReason: input.reason, originalBodyHash, redactedByUserId: userId, redactedAt }).where(and(eq(investigationComments.id, input.commentId), eq(investigationComments.tenantId, tenantId)));
+  await recordInvestigationActivity(db, { tenantId, caseId: comment.caseId, activityKind: "comment_redacted", summary: "Investigation comment redaction recorded.", detail: { commentId: comment.id, visibility: comment.visibility, originalBodyHash, redactionReason: input.reason, redactedByUserId: userId, redactedAt: redactedAt.toISOString() }, actorUserId: userId });
+  return { ok: true as const, commentId: comment.id, originalBodyHash, redactedAt, pilotOnly: true };
+}
+
+export async function configureHourlySlaReminderPolicy(userId: number, tenantId: string, name: string) {
+  await assertTenantRole(userId, tenantId, ["platform_operator"]);
+  const db = await dbOrThrow();
+  const existing = (await db.select().from(investigationSlaReminderPolicies).where(and(eq(investigationSlaReminderPolicies.tenantId, tenantId), eq(investigationSlaReminderPolicies.name, name))).limit(1))[0];
+  if (existing) {
+    await db.update(investigationSlaReminderPolicies).set({ cadenceCron: "0 0 * * * *", recipientMode: "assigned_investigator", operationalOwnerRole: "platform_operator", status: "draft", scheduleCronTaskUid: null, lastEvaluatedAt: null, createdByUserId: userId }).where(and(eq(investigationSlaReminderPolicies.id, existing.id), eq(investigationSlaReminderPolicies.tenantId, tenantId)));
+    return { id: existing.id, status: "draft" as const, cadenceCron: "0 0 * * * *", pilotOnly: true, activationBoundary: "Draft only. No Heartbeat task has been created; deployment and explicit user confirmation are required before activation." };
+  }
+  const id = `sla_policy_${nanoid(16)}`;
+  await db.insert(investigationSlaReminderPolicies).values({ id, tenantId, name, cadenceCron: "0 0 * * * *", recipientMode: "assigned_investigator", operationalOwnerRole: "platform_operator", status: "draft", createdByUserId: userId });
+  return { id, status: "draft" as const, cadenceCron: "0 0 * * * *", pilotOnly: true, activationBoundary: "Draft only. No Heartbeat task has been created; deployment and explicit user confirmation are required before activation." };
+}
+
+async function evaluateSlaReminderPolicyRecords(db: any, policy: typeof investigationSlaReminderPolicies.$inferSelect, actorUserId: number, now: Date) {
+  const assignments = await db.select().from(investigationCaseAssignments).where(eq(investigationCaseAssignments.tenantId, policy.tenantId)).orderBy(desc(investigationCaseAssignments.updatedAt)).limit(500);
+  const latestByCase = new Map<string, typeof assignments[number]>();
+  assignments.forEach((assignment: any) => { if (!latestByCase.has(assignment.caseId)) latestByCase.set(assignment.caseId, assignment); });
+  const evaluationHour = reminderEvaluationHour(now);
+  let recorded = 0;
+  for (const assignment of Array.from(latestByCase.values()) as any[]) {
+    const dueAt = assignment.serviceLevelTargetAt ?? assignment.dueAt;
+    const serviceLevel = serviceLevelPosture(dueAt);
+    if (!shouldCreateAssignedInvestigatorReminder({ assignedToUserId: assignment.assignedToUserId, dueAt, serviceLevelState: serviceLevel.state })) continue;
+    const existing = (await db.select({ id: investigationSlaReminders.id }).from(investigationSlaReminders).where(and(eq(investigationSlaReminders.policyId, policy.id), eq(investigationSlaReminders.assignmentId, assignment.id), eq(investigationSlaReminders.evaluationHour, evaluationHour))).limit(1))[0];
+    if (existing) continue;
+    const id = `sla_reminder_${nanoid(16)}`;
+    try {
+      await db.insert(investigationSlaReminders).values({ id, tenantId: policy.tenantId, policyId: policy.id, caseId: assignment.caseId, assignmentId: assignment.id, recipientUserId: assignment.assignedToUserId!, serviceLevelState: serviceLevel.state, dueAt: dueAt!, evaluationHour, status: "open" });
+    } catch (error) {
+      const concurrent = (await db.select({ id: investigationSlaReminders.id }).from(investigationSlaReminders).where(and(eq(investigationSlaReminders.policyId, policy.id), eq(investigationSlaReminders.assignmentId, assignment.id), eq(investigationSlaReminders.evaluationHour, evaluationHour))).limit(1))[0];
+      if (!concurrent) throw error;
+      continue;
+    }
+    await recordInvestigationActivity(db, { tenantId: policy.tenantId, caseId: assignment.caseId, activityKind: "sla_reminder_recorded", summary: "Assigned-investigator SLA attention record created.", detail: { reminderId: id, policyId: policy.id, assignmentId: assignment.id, recipientUserId: assignment.assignedToUserId, serviceLevelState: serviceLevel.state, dueAt: dueAt!.toISOString(), evaluationHour, delivery: "in_app_record_only", automaticEscalation: false }, actorUserId });
+    recorded += 1;
+  }
+  await db.update(investigationSlaReminderPolicies).set({ lastEvaluatedAt: now }).where(and(eq(investigationSlaReminderPolicies.id, policy.id), eq(investigationSlaReminderPolicies.tenantId, policy.tenantId)));
+  return { policyId: policy.id, evaluationHour, recorded, delivery: "in_app_record_only" as const, automaticEscalation: false, pilotOnly: true };
+}
+
+export async function evaluateHourlySlaReminderPolicy(userId: number, tenantId: string, policyId: string) {
+  await assertTenantRole(userId, tenantId, ["platform_operator"]);
+  const db = await dbOrThrow();
+  const policy = (await db.select().from(investigationSlaReminderPolicies).where(and(eq(investigationSlaReminderPolicies.id, policyId), eq(investigationSlaReminderPolicies.tenantId, tenantId))).limit(1))[0];
+  if (!policy) throw new Error("The SLA reminder policy is not available in this tenant scope.");
+  if (policy.status === "paused") throw new Error("The SLA reminder policy is paused.");
+  return evaluateSlaReminderPolicyRecords(db, policy, userId, new Date());
+}
+
+export async function activateDeployedHourlySlaReminderPolicy(userId: number, tenantId: string, policyId: string, rawCookieHeader: string | undefined) {
+  await assertTenantRole(userId, tenantId, ["platform_operator"]);
+  if (process.env.NODE_ENV !== "production") throw new Error("Hourly schedule activation is available only from the deployed application after this release checkpoint is published.");
+  const session = parseCookieHeader(rawCookieHeader ?? "")[COOKIE_NAME] ?? "";
+  if (!session) throw new Error("A platform-operator session is required to activate an hourly reminder schedule.");
+  const db = await dbOrThrow();
+  const policy = (await db.select().from(investigationSlaReminderPolicies).where(and(eq(investigationSlaReminderPolicies.id, policyId), eq(investigationSlaReminderPolicies.tenantId, tenantId))).limit(1))[0];
+  if (!policy) throw new Error("The SLA reminder policy is not available in this tenant scope.");
+  if (policy.status === "active" && policy.scheduleCronTaskUid) return { policyId, taskUid: policy.scheduleCronTaskUid, status: "active" as const, alreadyActive: true, delivery: "in_app_record_only" as const };
+  if (policy.scheduleCronTaskUid) throw new Error("This policy retains a scheduled-task reference. Resolve or pause that schedule before activating another task.");
+  const job = await createHeartbeatJob({ name: `dcp-sla-${tenantId}-${policy.id}`, cron: "0 0 * * * *", path: "/api/scheduled/investigation-sla-reminders", method: "POST", payload: {}, description: "Decision Control Plane pilot: hourly assigned-investigator SLA in-app record evaluation only. No external delivery or automatic escalation." }, session);
+  try {
+    await db.update(investigationSlaReminderPolicies).set({ status: "active", scheduleCronTaskUid: job.taskUid }).where(and(eq(investigationSlaReminderPolicies.id, policy.id), eq(investigationSlaReminderPolicies.tenantId, tenantId)));
+  } catch (error) {
+    await deleteHeartbeatJob(job.taskUid, session).catch(() => undefined);
+    throw error;
+  }
+  return { policyId: policy.id, taskUid: job.taskUid, status: "active" as const, alreadyActive: false, delivery: "in_app_record_only" as const, automaticEscalation: false };
+}
+
+export async function evaluateHourlySlaReminderPolicyByTaskUid(taskUid: string) {
+  const db = await dbOrThrow();
+  const policy = (await db.select().from(investigationSlaReminderPolicies).where(and(eq(investigationSlaReminderPolicies.scheduleCronTaskUid, taskUid), eq(investigationSlaReminderPolicies.status, "active"))).limit(1))[0];
+  if (!policy) throw new Error("No active SLA reminder policy is bound to this scheduled task.");
+  return evaluateSlaReminderPolicyRecords(db, policy, -1, new Date());
+}
+
+export async function addInvestigationComment(userId: number, tenantId: string, input: { caseId: string; body: string; visibility: CommentVisibility }) {
+  const membership = await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer"]);
+  if (!canCreateCommentWithVisibility(membership.role as TenantOperatorRole, input.visibility)) throw new Error("The current tenant role cannot create a comment with this visibility scope.");
   const db = await dbOrThrow();
   const investigationCase = (await db.select().from(investigationCases).where(and(eq(investigationCases.id, input.caseId), eq(investigationCases.tenantId, tenantId))).limit(1))[0];
   if (!investigationCase) throw new Error("The investigation case is not available in this tenant scope.");
   const id = `comment_${nanoid(16)}`;
-  await db.insert(investigationComments).values({ id, tenantId, caseId: input.caseId, body: input.body, createdByUserId: userId });
-  await recordInvestigationActivity(db, { tenantId, caseId: input.caseId, actorUserId: userId, ...commentActivity({ commentId: id, body: input.body }) });
-  return { id, caseId: input.caseId, pilotOnly: true };
+  const contentHash = commentContentHash(input.body);
+  await db.insert(investigationComments).values({ id, tenantId, caseId: input.caseId, body: input.body, visibility: input.visibility, originalBodyHash: contentHash, createdByUserId: userId });
+  await recordInvestigationActivity(db, { tenantId, caseId: input.caseId, actorUserId: userId, ...commentActivity({ commentId: id, visibility: input.visibility, contentHash }) });
+  return { id, caseId: input.caseId, visibility: input.visibility, pilotOnly: true };
 }
 
 export async function addInvestigationAttachment(userId: number, tenantId: string, input: { caseId: string; fileName: string; contentType: string; contentBase64: string; summary?: string }) {
@@ -952,12 +1096,16 @@ export async function registerPilotExtension(userId: number, tenantId: string, i
 export async function exportAuditTrail(userId: number, tenantId: string, format: "json" | "csv") {
   await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
   const db = await dbOrThrow();
-  const [evidence, actions, steps] = await Promise.all([
+  const [evidence, actions, steps, activities, teamViews, reminderPolicies, reminders] = await Promise.all([
     db.select().from(decisionEvidence).where(eq(decisionEvidence.tenantId, tenantId)).orderBy(desc(decisionEvidence.createdAt)).limit(100),
     db.select().from(mcpToolCalls).where(eq(mcpToolCalls.tenantId, tenantId)).orderBy(desc(mcpToolCalls.createdAt)).limit(100),
     db.select().from(migrationSteps).where(eq(migrationSteps.tenantId, tenantId)).orderBy(desc(migrationSteps.createdAt)).limit(100),
+    db.select().from(investigationActivities).where(eq(investigationActivities.tenantId, tenantId)).orderBy(desc(investigationActivities.createdAt)).limit(200),
+    db.select().from(investigationTeamViews).where(eq(investigationTeamViews.tenantId, tenantId)).orderBy(desc(investigationTeamViews.updatedAt)).limit(100),
+    db.select().from(investigationSlaReminderPolicies).where(eq(investigationSlaReminderPolicies.tenantId, tenantId)).orderBy(desc(investigationSlaReminderPolicies.updatedAt)).limit(100),
+    db.select().from(investigationSlaReminders).where(eq(investigationSlaReminders.tenantId, tenantId)).orderBy(desc(investigationSlaReminders.createdAt)).limit(200),
   ]);
-  const payload = { tenantId, exportedAt: new Date().toISOString(), decisionEvidence: evidence, mcpToolCalls: actions, migrationSteps: steps };
+  const payload = { tenantId, exportedAt: new Date().toISOString(), decisionEvidence: evidence, mcpToolCalls: actions, migrationSteps: steps, investigationActivities: activities, sharedTeamViews: teamViews, slaReminderPolicies: reminderPolicies, slaReminderRecords: reminders, pilotOnly: true };
   const content = format === "json" ? JSON.stringify(payload, null, 2) : toCsv(payload);
   await db.insert(auditExports).values({ id: `exp_${nanoid(16)}`, tenantId, requestedByUserId: userId, format, scope: "pilot_audit_bundle", status: "prepared", summary: `Prepared ${format.toUpperCase()} audit bundle with ${evidence.length} decision evidence records, ${actions.length} MCP pilot calls, and ${steps.length} migration steps.` });
   return { filename: `dcp-${tenantId}-pilot-audit.${format}`, content, format, pilotOnly: true };

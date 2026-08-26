@@ -70,3 +70,9 @@
 - [x] Add focused automated coverage for retained lifecycle mutation contracts: assignment, escalation, comment, and attachment activity evidence.
 - [x] Save the final knowledge-portal and investigation-lifecycle release checkpoint after the remaining direct filter and mutation validation.
 - [x] Save a new release checkpoint for the completed knowledge-portal and investigation-lifecycle expansion.
+- [x] Translate the supplied capability roadmap into a bounded Operator Enablement and governed collaboration release plan.
+- [x] Add tenant-scoped comment visibility controls, redaction workflow records, and immutable redaction audit evidence.
+- [x] Add policy-controlled shared team queue views with explicit role access and collaboration ownership posture.
+- [x] Add hourly assigned-investigator in-app SLA reminder configuration with explicit operational ownership, audit records, and no external-delivery claim.
+- [x] Build an in-application utilization guide with contextual help, recommended next actions, workflow checklists, and guided paths to Replay, Migration, Investigations, Integrations, and Documentation.
+- [x] Validate, document, and checkpoint the Operator Enablement and governed collaboration release.

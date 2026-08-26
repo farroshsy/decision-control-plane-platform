@@ -17,6 +17,7 @@ import ReplayExplorer from "./pages/ReplayExplorer";
 import VersionLab from "./pages/VersionLab";
 import Integrations from "./pages/Integrations";
 import InvestigationCase from "./pages/InvestigationCase";
+import GettingStarted from "./pages/GettingStarted";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -24,6 +25,7 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Landing} />
       <Route path={"/app/docs"}><DashboardLayout><DocsPortal /></DashboardLayout></Route>
+      <Route path={"/app/getting-started"}><DashboardLayout><GettingStarted /></DashboardLayout></Route>
       <Route path={"/app"}><DashboardLayout><PlatformOverview /></DashboardLayout></Route>
       <Route path={"/app/state"}><DashboardLayout><StateEvolution /></DashboardLayout></Route>
       <Route path={"/app/rollouts"}><DashboardLayout><Rollouts /></DashboardLayout></Route>

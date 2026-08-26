@@ -68,9 +68,27 @@ export const controlPlaneRouter = router({
   deleteInvestigationSavedView: protectedProcedure
     .input(tenantInput.extend({ viewId: z.string().min(3).max(64) }))
     .mutation(({ ctx, input }) => expansion.deleteInvestigationSavedView(ctx.user.id, input.tenantId, input.viewId)),
+  createInvestigationTeamView: protectedProcedure
+    .input(tenantInput.extend({ name: z.string().min(3).max(120), filters: z.object({ search: z.string().max(180).optional(), status: z.enum(["open", "confirmed", "explained", "accepted", "rollback_required", "closed"]).optional(), assignedRole: z.enum(["platform_operator", "compliance_operator", "customer_operator"]).optional(), assignedToUserId: z.number().int().positive().optional(), serviceLevelState: z.enum(["not_set", "on_track", "due_soon", "overdue"]).optional(), escalationOnly: z.boolean().optional(), sort: z.enum(["updated_desc", "due_asc", "service_level_asc", "priority_desc", "status_asc"]).optional() }), allowedRoles: z.array(z.enum(["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"])).min(1).max(5) }))
+    .mutation(({ ctx, input }) => expansion.createInvestigationTeamView(ctx.user.id, input.tenantId, input)),
+  retireInvestigationTeamView: protectedProcedure
+    .input(tenantInput.extend({ viewId: z.string().min(3).max(64) }))
+    .mutation(({ ctx, input }) => expansion.retireInvestigationTeamView(ctx.user.id, input.tenantId, input.viewId)),
   addInvestigationComment: protectedProcedure
-    .input(tenantInput.extend({ caseId: z.string().min(3).max(64), body: z.string().min(2).max(4_000) }))
+    .input(tenantInput.extend({ caseId: z.string().min(3).max(64), body: z.string().min(2).max(4_000), visibility: z.enum(["tenant_members", "operator_team", "platform_compliance"]).default("tenant_members") }))
     .mutation(({ ctx, input }) => expansion.addInvestigationComment(ctx.user.id, input.tenantId, input)),
+  redactInvestigationComment: protectedProcedure
+    .input(tenantInput.extend({ commentId: z.string().min(3).max(64), reason: z.string().min(8).max(1_000) }))
+    .mutation(({ ctx, input }) => expansion.redactInvestigationComment(ctx.user.id, input.tenantId, input)),
+  configureHourlySlaReminderPolicy: protectedProcedure
+    .input(tenantInput.extend({ name: z.string().min(3).max(120) }))
+    .mutation(({ ctx, input }) => expansion.configureHourlySlaReminderPolicy(ctx.user.id, input.tenantId, input.name)),
+  evaluateHourlySlaReminderPolicy: protectedProcedure
+    .input(tenantInput.extend({ policyId: z.string().min(3).max(64) }))
+    .mutation(({ ctx, input }) => expansion.evaluateHourlySlaReminderPolicy(ctx.user.id, input.tenantId, input.policyId)),
+  activateDeployedHourlySlaReminderPolicy: protectedProcedure
+    .input(tenantInput.extend({ policyId: z.string().min(3).max(64) }))
+    .mutation(({ ctx, input }) => expansion.activateDeployedHourlySlaReminderPolicy(ctx.user.id, input.tenantId, input.policyId, ctx.req.headers.cookie)),
   addInvestigationAttachment: protectedProcedure
     .input(tenantInput.extend({ caseId: z.string().min(3).max(64), fileName: z.string().min(1).max(240), contentType: z.string().min(3).max(120), contentBase64: z.string().min(4).max(2_700_000), summary: z.string().max(280).optional() }))
     .mutation(({ ctx, input }) => expansion.addInvestigationAttachment(ctx.user.id, input.tenantId, input)),

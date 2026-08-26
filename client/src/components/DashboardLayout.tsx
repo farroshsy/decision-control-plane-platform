@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Activity, BookOpenText, Bot, DatabaseZap, FileSearch, Gauge, GitCompareArrows, LayoutDashboard, LogOut, Moon, Network, PanelLeft, ShieldCheck, Sun, Waypoints } from "lucide-react";
+import { Activity, BookOpenText, Bot, Compass, DatabaseZap, FileSearch, Gauge, GitCompareArrows, LayoutDashboard, LogOut, Moon, Network, PanelLeft, ShieldCheck, Sun, Waypoints } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -30,6 +30,7 @@ import { Button } from "./ui/button";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Control room", path: "/app" },
+  { icon: Compass, label: "Getting started", path: "/app/getting-started" },
   { icon: GitCompareArrows, label: "State evolution", path: "/app/state" },
   { icon: DatabaseZap, label: "Rollouts", path: "/app/rollouts" },
   { icon: Gauge, label: "Operations", path: "/app/operations" },

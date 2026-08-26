@@ -12,8 +12,8 @@ describe("investigation mutation activity contracts", () => {
     expect(result).toMatchObject({ activityKind: "escalation_queued", detail: { automaticDispatch: false, serviceLevelTargetMinutes: 240 } });
   });
 
-  it("preserves rationale and attachment metadata in append-only activity payloads", () => {
-    expect(commentActivity({ commentId: "comment_1", body: "Retained handoff rationale" })).toEqual({ activityKind: "comment_added", summary: "Investigation comment retained.", detail: { commentId: "comment_1", body: "Retained handoff rationale" } });
+  it("preserves governed comment evidence without copying a comment body into the shared activity payload", () => {
+    expect(commentActivity({ commentId: "comment_1", visibility: "operator_team", contentHash: "sha256:abc" })).toEqual({ activityKind: "comment_added", summary: "Investigation comment retained.", detail: { commentId: "comment_1", visibility: "operator_team", contentHash: "sha256:abc" } });
     expect(attachmentActivity({ attachmentId: "attachment_1", fileName: "evidence.txt", contentType: "text/plain", sizeBytes: 42, summary: null })).toMatchObject({ activityKind: "attachment_added", summary: "Attachment retained: evidence.txt.", detail: { sizeBytes: 42 } });
   });
 });

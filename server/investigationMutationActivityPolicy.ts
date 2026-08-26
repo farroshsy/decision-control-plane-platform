@@ -23,7 +23,7 @@ export function escalationActivity(input: { escalationId: string; queue: string;
   };
 }
 
-export function commentActivity(input: { commentId: string; body: string }) {
+export function commentActivity(input: { commentId: string; visibility: "tenant_members" | "operator_team" | "platform_compliance"; contentHash: string }) {
   return { activityKind: "comment_added" as const, summary: "Investigation comment retained.", detail: input };
 }
 
