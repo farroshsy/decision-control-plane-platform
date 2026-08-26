@@ -206,7 +206,7 @@ export async function workspaceForUser(userId: number, tenantId: string) {
         : Promise.resolve([]),
     db.select().from(migrationSteps).where(eq(migrationSteps.tenantId, tenantId)).orderBy(desc(migrationSteps.createdAt)).limit(12),
   ]);
-  return { tenant, manifests, rollouts, telemetry: telemetry[0] ?? null, evidence, actions, notifications, steps };
+  return { tenant, membership: { role: membership.role }, manifests, rollouts, telemetry: telemetry[0] ?? null, evidence, actions, notifications, steps };
 }
 
 export async function approveRollout(userId: number, tenantId: string, rolloutId: string, rationale: string) {

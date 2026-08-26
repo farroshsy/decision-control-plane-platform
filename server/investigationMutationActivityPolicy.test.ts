@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assignmentActivity, attachmentActivity, commentActivity, escalationActivity } from "./investigationMutationActivityPolicy";
+import { assignmentActivity, attachmentActivity, commentActivity, escalationActivity, slaReminderResolutionActivity } from "./investigationMutationActivityPolicy";
 
 describe("investigation mutation activity contracts", () => {
   it("preserves accountable assignment evidence including due and service-level targets", () => {
@@ -15,5 +15,10 @@ describe("investigation mutation activity contracts", () => {
   it("preserves governed comment evidence without copying a comment body into the shared activity payload", () => {
     expect(commentActivity({ commentId: "comment_1", visibility: "operator_team", contentHash: "sha256:abc" })).toEqual({ activityKind: "comment_added", summary: "Investigation comment retained.", detail: { commentId: "comment_1", visibility: "operator_team", contentHash: "sha256:abc" } });
     expect(attachmentActivity({ attachmentId: "attachment_1", fileName: "evidence.txt", contentType: "text/plain", sizeBytes: 42, summary: null })).toMatchObject({ activityKind: "attachment_added", summary: "Attachment retained: evidence.txt.", detail: { sizeBytes: 42 } });
+  });
+
+  it("preserves immutable reminder-resolution evidence for acknowledgement and reasoned dismissal", () => {
+    expect(slaReminderResolutionActivity({ reminderId: "reminder_1", policyId: "policy_1", assignmentId: "assignment_1", recipientUserId: 9, priorStatus: "open", action: "acknowledge", dismissalReason: null })).toMatchObject({ activityKind: "sla_reminder_acknowledged", detail: { nextStatus: "acknowledged", delivery: "in_app_record_only" } });
+    expect(slaReminderResolutionActivity({ reminderId: "reminder_1", policyId: "policy_1", assignmentId: "assignment_1", recipientUserId: 9, priorStatus: "acknowledged", action: "dismiss", dismissalReason: "Validation-only duplicate attention item" })).toMatchObject({ activityKind: "sla_reminder_dismissed", detail: { nextStatus: "dismissed", dismissalReason: "Validation-only duplicate attention item" } });
   });
 });

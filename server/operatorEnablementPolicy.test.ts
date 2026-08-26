@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canCreateCommentWithVisibility, canRedactComment, commentVisibleToRole, reminderEvaluationHour, shouldCreateAssignedInvestigatorReminder, teamViewVisibleToRole, teamViewVisibleToTenantMember } from "./operatorEnablementPolicy";
+import { canCreateCommentWithVisibility, canRedactComment, canResolveAssignedInvestigatorReminder, commentVisibleToRole, reminderEvaluationHour, reminderResolutionTarget, shouldCreateAssignedInvestigatorReminder, teamViewVisibleToRole, teamViewVisibleToTenantMember } from "./operatorEnablementPolicy";
 
 describe("operator enablement collaboration policy", () => {
   it("enforces role-visible comment scopes and controlled redaction authority", () => {
@@ -32,5 +32,13 @@ describe("operator enablement collaboration policy", () => {
     expect(shouldCreateAssignedInvestigatorReminder({ assignedToUserId: 9, dueAt: new Date(), serviceLevelState: "due_soon" })).toBe(true);
     expect(shouldCreateAssignedInvestigatorReminder({ assignedToUserId: null, dueAt: new Date(), serviceLevelState: "overdue" })).toBe(false);
     expect(shouldCreateAssignedInvestigatorReminder({ assignedToUserId: 9, dueAt: new Date(), serviceLevelState: "on_track" })).toBe(false);
+  });
+
+  it("allows only the named investigator to resolve a reminder and preserves terminal dismissal", () => {
+    expect(canResolveAssignedInvestigatorReminder({ recipientUserId: 17, actorUserId: 17 })).toBe(true);
+    expect(canResolveAssignedInvestigatorReminder({ recipientUserId: 17, actorUserId: 18 })).toBe(false);
+    expect(reminderResolutionTarget("open", "acknowledge")).toBe("acknowledged");
+    expect(reminderResolutionTarget("acknowledged", "dismiss")).toBe("dismissed");
+    expect(reminderResolutionTarget("dismissed", "acknowledge")).toBeNull();
   });
 });

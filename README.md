@@ -25,7 +25,7 @@ The application is a React, TypeScript, Express, tRPC, Drizzle, and MySQL/TiDB p
 | **Investigation workflow**     | BPMN/DMN/CMMN-aware case workspace, accountable outcomes, advanced queue search/filter/sort, private saved views, named or role-based assignment, due/SLA targets, manual escalation, comments, attachment references, immutable activity evidence, and cross-workspace trace navigation. |
 | **Evidence-package integrity** | Canonical JSON hashing, server-held HMAC-SHA-256 manifest signatures, signature verification, tenant-scoped retention-policy records, and retained export references.                         |
 | **Integration foundation**     | Tenant-scoped pilot API keys, bounded JSON-RPC MCP endpoint, SDK/CLI examples, simulated webhook subscriptions/deliveries, searchable diagnostics, and controlled local retry audit.          |
-| **Operator experience**        | Responsive dashboard navigation, dark mode, compact tenant-scoped loading skeletons, contextual notifications, and readable safety status.                                                    |
+| **Operator experience**        | Responsive dashboard navigation, dark mode, compact tenant-scoped loading skeletons, contextual notifications, personal in-app reminder acknowledgement/dismissal with retained evidence, tenant-admin workload oversight, and readable safety status. |
 
 ## Control flow
 
@@ -95,7 +95,7 @@ pnpm check    # TypeScript without emitting files
 pnpm build    # Vite client build + bundled server build
 ```
 
-The latest knowledge-portal and investigation-lifecycle validation passed **36 tests across 11 Vitest files**, TypeScript checking, and the production build. The current Operator Enablement release adds further focused policy coverage; final full-suite/build/browser validation is recorded in its release notes. Vite may warn that the client bundle exceeds its default 500 kB chunk guidance; the warning is non-blocking and should be addressed with deliberate code-splitting work rather than suppressed.
+The current Governed Decision Authoring foundation validation passed **42 tests across 12 Vitest files**, TypeScript checking, the production build, and approved browser/persistence review of the tenant-scoped reminder lifecycle. Vite may warn that the client bundle exceeds its default 500 kB chunk guidance; the warning is non-blocking and should be addressed with deliberate code-splitting work rather than suppressed.
 
 ### Database changes
 
@@ -128,6 +128,9 @@ todo.md                  Durable implementation backlog
 | [`docs/knowledge-portal-investigation-lifecycle-release-notes.md`](docs/knowledge-portal-investigation-lifecycle-release-notes.md) | Searchable portal, advanced queues, ownership, service-level, comments, attachments, and activity release. |
 | [`docs/operator-enablement-collaboration-plan.md`](docs/operator-enablement-collaboration-plan.md) | Selected operator-guidance, collaboration, and reminder scope with boundaries. |
 | [`docs/operator-enablement-governed-collaboration-release-notes.md`](docs/operator-enablement-governed-collaboration-release-notes.md) | Five-minute guide, governed comments/redaction, shared queues, and draft/deployment-gated SLA reminders. |
+| [`docs/governed-decision-authoring-discovery-plan.md`](docs/governed-decision-authoring-discovery-plan.md) | Bounded Policy Studio, simulation, Evidence Graph, workflow, pack, AI governance, analytics, and ecosystem discovery sequence. |
+| [`docs/product-release-roadmap.md`](docs/product-release-roadmap.md) | Eight release milestones: operate, author, explain, reuse, package, govern AI, improve, and extend. |
+| [`docs/validation-notes-governed-decision-authoring.md`](docs/validation-notes-governed-decision-authoring.md) | Browser and persistence evidence for immutable reminder acknowledgement/dismissal and tenant workload visibility. |
 | [`docs/validation-notes-caseflow.md`](docs/validation-notes-caseflow.md)                               | Browser and automated evidence for the investigation-case flow.                             |
 
 ### Complete research and presentation archive

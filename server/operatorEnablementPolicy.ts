@@ -37,3 +37,15 @@ export function reminderEvaluationHour(now: Date): string {
 export function shouldCreateAssignedInvestigatorReminder(input: { assignedToUserId: number | null; dueAt: Date | null; serviceLevelState: "not_set" | "on_track" | "due_soon" | "overdue" }): boolean {
   return input.assignedToUserId !== null && input.dueAt !== null && (input.serviceLevelState === "due_soon" || input.serviceLevelState === "overdue");
 }
+
+export type ReminderStatus = "open" | "acknowledged" | "dismissed";
+export type ReminderResolutionAction = "acknowledge" | "dismiss";
+
+export function canResolveAssignedInvestigatorReminder(input: { recipientUserId: number; actorUserId: number }): boolean {
+  return input.recipientUserId === input.actorUserId;
+}
+
+export function reminderResolutionTarget(status: ReminderStatus, action: ReminderResolutionAction): ReminderStatus | null {
+  if (action === "acknowledge") return status === "open" ? "acknowledged" : null;
+  return status === "open" || status === "acknowledged" ? "dismissed" : null;
+}

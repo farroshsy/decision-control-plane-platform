@@ -83,3 +83,8 @@
 - [x] Add explicit failed-query feedback to the personal SLA reminder inbox so an unavailable inbox is not presented as zero pending records.
 - [x] Re-run validation and save the personal reminder and shared-queue clarity enhancement checkpoint.
 - [x] Save the final checkpoint for the personal reminder inbox and shared-queue clarity enhancement.
+- [x] Implement reminder acknowledgement and dismissal states with immutable tenant-scoped activity evidence.
+- [x] Add a tenant-admin dashboard view of open reminder workload across assignees.
+- [x] Draft a scoped Policy Studio discovery plan covering governed authoring, Evidence Graph, Simulation Workspace, Workflow Library, Industry Packs, AI Governance, Decision Analytics, Marketplace, Partner SDK, and the multi-domain decision platform.
+- [x] Validate, document, and checkpoint the governed reminder and discovery expansion.
+- [x] Reframe the remaining platform roadmap into Governed Decision Operations, Authoring, Knowledge Graph, Workflow Platform, Industry Packs, AI Governance, Decision Intelligence, and Ecosystem milestones.

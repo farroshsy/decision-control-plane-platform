@@ -41,6 +41,12 @@ export const controlPlaneRouter = router({
   personalSlaReminderInbox: protectedProcedure
     .input(tenantInput.extend({ serviceLevelState: z.enum(["due_soon", "overdue"]).optional() }))
     .query(({ ctx, input }) => expansion.personalSlaReminderInbox(ctx.user.id, input.tenantId, input)),
+  resolvePersonalSlaReminder: protectedProcedure
+    .input(tenantInput.extend({ reminderId: z.string().min(3).max(64), action: z.enum(["acknowledge", "dismiss"]), dismissalReason: z.string().min(8).max(1_000).optional() }))
+    .mutation(({ ctx, input }) => expansion.resolvePersonalSlaReminder(ctx.user.id, input.tenantId, input)),
+  tenantSlaReminderWorkload: protectedProcedure
+    .input(tenantInput)
+    .query(({ ctx, input }) => expansion.tenantSlaReminderWorkload(ctx.user.id, input.tenantId)),
   investigationCaseAssignees: protectedProcedure
     .input(tenantInput)
     .query(({ ctx, input }) => expansion.investigationCaseAssignees(ctx.user.id, input.tenantId)),

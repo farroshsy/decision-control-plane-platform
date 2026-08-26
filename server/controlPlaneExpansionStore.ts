@@ -38,11 +38,11 @@ import { signEvidencePackage, verifyEvidenceManifest, type SignedPackageManifest
 import { controlledRetryPlan, outcomeRequiresSeparateAuthority, type InvestigationOutcomeStatus } from "./investigationCasePolicy";
 import { admitPilotAttachment, defaultEscalationTargetMinutes, serviceLevelPosture, serviceLevelTarget } from "./investigationLifecyclePolicy";
 import { filterAndSortLifecycleQueue } from "./investigationQueuePolicy";
-import { assignmentActivity, attachmentActivity, commentActivity, escalationActivity } from "./investigationMutationActivityPolicy";
+import { assignmentActivity, attachmentActivity, commentActivity, escalationActivity, slaReminderResolutionActivity } from "./investigationMutationActivityPolicy";
 import { storagePut } from "./storage";
 import { createHeartbeatJob, deleteHeartbeatJob } from "./_core/heartbeat";
 import { COOKIE_NAME } from "../shared/const";
-import { canCreateCommentWithVisibility, canRedactComment, commentVisibleToRole, reminderEvaluationHour, shouldCreateAssignedInvestigatorReminder, teamViewVisibleToTenantMember, type CommentVisibility, type TenantOperatorRole } from "./operatorEnablementPolicy";
+import { canCreateCommentWithVisibility, canRedactComment, canResolveAssignedInvestigatorReminder, commentVisibleToRole, reminderEvaluationHour, reminderResolutionTarget, shouldCreateAssignedInvestigatorReminder, teamViewVisibleToTenantMember, type CommentVisibility, type ReminderResolutionAction, type TenantOperatorRole } from "./operatorEnablementPolicy";
 
 type IntegrationScope = "read_only" | "replay_operator" | "rollout_operator";
 type ApiKeyRow = typeof integrationApiKeys.$inferSelect;
@@ -118,7 +118,7 @@ async function recordInvestigationActivity(
   input: {
     tenantId: string;
     caseId: string;
-    activityKind: "case_created" | "outcome_recorded" | "assignment_recorded" | "escalation_queued" | "escalation_acknowledged" | "comment_added" | "comment_redacted" | "attachment_added" | "team_view_created" | "sla_reminder_recorded";
+    activityKind: "case_created" | "outcome_recorded" | "assignment_recorded" | "escalation_queued" | "escalation_acknowledged" | "comment_added" | "comment_redacted" | "attachment_added" | "team_view_created" | "sla_reminder_recorded" | "sla_reminder_acknowledged" | "sla_reminder_dismissed";
     summary: string;
     detail: Record<string, unknown>;
     actorUserId: number;
@@ -676,22 +676,79 @@ export async function personalSlaReminderInbox(userId: number, tenantId: string,
   await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
   const db = await dbOrThrow();
   const [reminders, cases] = await Promise.all([
-    db.select().from(investigationSlaReminders).where(and(eq(investigationSlaReminders.tenantId, tenantId), eq(investigationSlaReminders.recipientUserId, userId), eq(investigationSlaReminders.status, "open"))).orderBy(desc(investigationSlaReminders.dueAt)).limit(50),
+    db.select().from(investigationSlaReminders).where(and(eq(investigationSlaReminders.tenantId, tenantId), eq(investigationSlaReminders.recipientUserId, userId))).orderBy(desc(investigationSlaReminders.createdAt)).limit(50),
     db.select().from(investigationCases).where(eq(investigationCases.tenantId, tenantId)).orderBy(desc(investigationCases.updatedAt)).limit(100),
   ]);
   const casesById = new Map(cases.map(investigationCase => [investigationCase.id, investigationCase]));
-  const filtered = input.serviceLevelState ? reminders.filter(reminder => reminder.serviceLevelState === input.serviceLevelState) : reminders;
+  const openReminders = reminders.filter(reminder => reminder.status === "open");
+  const acknowledgedReminders = reminders.filter(reminder => reminder.status === "acknowledged");
+  const filtered = input.serviceLevelState ? openReminders.filter(reminder => reminder.serviceLevelState === input.serviceLevelState) : openReminders;
+  const presentReminder = (reminder: typeof reminders[number]) => {
+    const investigationCase = casesById.get(reminder.caseId);
+    return {
+      ...reminder,
+      case: investigationCase ? { id: investigationCase.id, decisionId: investigationCase.decisionId, summary: investigationCase.summary, status: investigationCase.status } : null,
+    };
+  };
   return {
-    pendingCount: reminders.length,
-    reminders: filtered.map(reminder => {
-      const investigationCase = casesById.get(reminder.caseId);
-      return {
-        ...reminder,
-        case: investigationCase ? { id: investigationCase.id, decisionId: investigationCase.decisionId, summary: investigationCase.summary, status: investigationCase.status } : null,
-      };
-    }),
+    pendingCount: openReminders.length,
+    reminders: filtered.map(presentReminder),
+    acknowledgedReminders: acknowledgedReminders.map(presentReminder),
     delivery: "in_app_record_only" as const,
     pilotOnly: true,
+  };
+}
+
+export async function resolvePersonalSlaReminder(userId: number, tenantId: string, input: { reminderId: string; action: ReminderResolutionAction; dismissalReason?: string }) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
+  const db = await dbOrThrow();
+  const reminder = (await db.select().from(investigationSlaReminders).where(and(eq(investigationSlaReminders.id, input.reminderId), eq(investigationSlaReminders.tenantId, tenantId))).limit(1))[0];
+  if (!reminder) throw new Error("The SLA reminder is not available in this tenant scope.");
+  if (!canResolveAssignedInvestigatorReminder({ recipientUserId: reminder.recipientUserId, actorUserId: userId })) throw new Error("Only the named assigned investigator can resolve this in-app SLA reminder.");
+  const targetStatus = reminderResolutionTarget(reminder.status, input.action);
+  if (!targetStatus) throw new Error("This SLA reminder cannot transition from its current state through the requested action.");
+  if (input.action === "dismiss" && !input.dismissalReason?.trim()) throw new Error("A dismissal reason is required to preserve accountable reminder evidence.");
+  const now = new Date();
+  const update = input.action === "acknowledge"
+    ? { status: targetStatus, acknowledgedAt: now, acknowledgedByUserId: userId }
+    : { status: targetStatus, dismissedAt: now, dismissedByUserId: userId, dismissalReason: input.dismissalReason!.trim() };
+  await db.update(investigationSlaReminders).set(update).where(and(eq(investigationSlaReminders.id, reminder.id), eq(investigationSlaReminders.tenantId, tenantId)));
+  await recordInvestigationActivity(db, { tenantId, caseId: reminder.caseId, actorUserId: userId, ...slaReminderResolutionActivity({ reminderId: reminder.id, policyId: reminder.policyId, assignmentId: reminder.assignmentId, recipientUserId: reminder.recipientUserId, priorStatus: reminder.status, action: input.action, dismissalReason: input.action === "dismiss" ? input.dismissalReason!.trim() : null }) });
+  return { reminderId: reminder.id, status: targetStatus, action: input.action, resolvedAt: now, pilotOnly: true, delivery: "in_app_record_only" as const };
+}
+
+export async function tenantSlaReminderWorkload(userId: number, tenantId: string) {
+  await assertTenantRole(userId, tenantId, ["platform_operator"]);
+  const db = await dbOrThrow();
+  const [reminders, members] = await Promise.all([
+    db.select().from(investigationSlaReminders).where(eq(investigationSlaReminders.tenantId, tenantId)).orderBy(desc(investigationSlaReminders.createdAt)).limit(500),
+    db.select({ userId: tenantMembers.userId, role: tenantMembers.role, name: users.name, email: users.email }).from(tenantMembers).leftJoin(users, eq(users.id, tenantMembers.userId)).where(eq(tenantMembers.tenantId, tenantId)).orderBy(tenantMembers.role),
+  ]);
+  const workload = new Map<number, { userId: number; role: string; name: string | null; email: string | null; openCount: number; dueSoonCount: number; overdueCount: number; acknowledgedCount: number; dismissedCount: number; latestReminderAt: Date | null }>();
+  members.forEach(member => workload.set(member.userId, { userId: member.userId, role: member.role, name: member.name ?? null, email: member.email ?? null, openCount: 0, dueSoonCount: 0, overdueCount: 0, acknowledgedCount: 0, dismissedCount: 0, latestReminderAt: null }));
+  reminders.forEach(reminder => {
+    const member = workload.get(reminder.recipientUserId);
+    if (!member) return;
+    if (!member.latestReminderAt || reminder.createdAt > member.latestReminderAt) member.latestReminderAt = reminder.createdAt;
+    if (reminder.status === "open") {
+      member.openCount += 1;
+      if (reminder.serviceLevelState === "due_soon") member.dueSoonCount += 1;
+      if (reminder.serviceLevelState === "overdue") member.overdueCount += 1;
+    } else if (reminder.status === "acknowledged") member.acknowledgedCount += 1;
+    else member.dismissedCount += 1;
+  });
+  const assignees = Array.from(workload.values()).sort((left, right) => right.overdueCount - left.overdueCount || right.openCount - left.openCount || left.role.localeCompare(right.role));
+  return {
+    assignees,
+    totals: {
+      openCount: assignees.reduce((total, assignee) => total + assignee.openCount, 0),
+      dueSoonCount: assignees.reduce((total, assignee) => total + assignee.dueSoonCount, 0),
+      overdueCount: assignees.reduce((total, assignee) => total + assignee.overdueCount, 0),
+      acknowledgedCount: assignees.reduce((total, assignee) => total + assignee.acknowledgedCount, 0),
+      dismissedCount: assignees.reduce((total, assignee) => total + assignee.dismissedCount, 0),
+    },
+    pilotOnly: true,
+    delivery: "in_app_record_only" as const,
   };
 }
 
