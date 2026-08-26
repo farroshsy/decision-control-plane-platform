@@ -27,6 +27,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import { resolveSidebarWidth } from "./dashboardLayoutPolicy";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Control room", path: "/app" },
@@ -46,8 +47,6 @@ const menuItems = [
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 480;
 
 export default function DashboardLayout({
   children,
@@ -123,6 +122,8 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const pendingSidebarWidth = useRef<number | null>(null);
+  const sidebarResizeFrame = useRef<number | null>(null);
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
@@ -137,10 +138,20 @@ function DashboardLayoutContent({
       if (!isResizing) return;
 
       const sidebarLeft = sidebarRef.current?.getBoundingClientRect().left ?? 0;
-      const newWidth = e.clientX - sidebarLeft;
-      if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
-        setSidebarWidth(newWidth);
-      }
+      const nextWidth = resolveSidebarWidth(e.clientX, sidebarLeft);
+      if (nextWidth === null) return;
+
+      pendingSidebarWidth.current = nextWidth;
+      if (sidebarResizeFrame.current !== null) return;
+
+      sidebarResizeFrame.current = window.requestAnimationFrame(() => {
+        const frameWidth = pendingSidebarWidth.current;
+        sidebarResizeFrame.current = null;
+        pendingSidebarWidth.current = null;
+        if (frameWidth !== null) {
+          setSidebarWidth(frameWidth);
+        }
+      });
     };
 
     const handleMouseUp = () => {
@@ -157,6 +168,11 @@ function DashboardLayoutContent({
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
+      if (sidebarResizeFrame.current !== null) {
+        window.cancelAnimationFrame(sidebarResizeFrame.current);
+        sidebarResizeFrame.current = null;
+      }
+      pendingSidebarWidth.current = null;
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };

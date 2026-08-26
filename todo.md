@@ -88,3 +88,5 @@
 - [x] Draft a scoped Policy Studio discovery plan covering governed authoring, Evidence Graph, Simulation Workspace, Workflow Library, Industry Packs, AI Governance, Decision Analytics, Marketplace, Partner SDK, and the multi-domain decision platform.
 - [x] Validate, document, and checkpoint the governed reminder and discovery expansion.
 - [x] Reframe the remaining platform roadmap into Governed Decision Operations, Authoring, Knowledge Graph, Workflow Platform, Industry Packs, AI Governance, Decision Intelligence, and Ecosystem milestones.
+- [x] Diagnose and fix the Control Room ResizeObserver loop warning without changing tenant-scoped dashboard behavior.
+- [x] Validate and checkpoint the ResizeObserver warning fix.
