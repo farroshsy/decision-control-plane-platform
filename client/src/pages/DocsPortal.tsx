@@ -1,55 +1,104 @@
-import { ArrowRight, BookOpenText, Braces, CheckCircle2, Code2, FileCheck2, Layers3, PlayCircle, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
+import { Archive, ArrowRight, BookOpen, FileText, Gavel, Network, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SchemaReference } from "@/components/SchemaReference";
-import { DeveloperPlayground } from "@/components/DeveloperPlayground";
-import { ArchitectureBlueprint, ExtensionContract } from "@/components/ArchitectureBlueprint";
+import { documentationCatalog, searchDocumentation, type DocumentationEntry } from "@/lib/documentationCatalog";
 
-const steps = [
-  ["01", "Create a tenant scope", "Issue a tenant-scoped service identity and configure residency, purpose, and RPO policy."],
-  ["02", "Map the Domain Adapter", "Canonicalize source events, establish idempotency, and bind versioned evidence."],
-  ["03", "Run shadow mode", "Compare incumbent and control-plane decisions with no action authority transferred."],
-  ["04", "Verify replay", "Prove versioned policy and state produce an explainable result from immutable evidence."],
-  ["05", "Canary authority", "Begin gated action authority only after ownership, RPO, audit, and approval evidence passes."],
-];
+const kinds: Array<DocumentationEntry["kind"] | "All"> = ["All", "Theory", "Architecture", "Guide", "ADR", "Release", "Research archive"];
+
+const kindIcon = (kind: DocumentationEntry["kind"]) => {
+  if (kind === "ADR") return Gavel;
+  if (kind === "Architecture") return Network;
+  if (kind === "Research archive") return Archive;
+  if (kind === "Theory") return BookOpen;
+  return FileText;
+};
 
 export default function DocsPortal() {
-  return <div className="min-h-screen min-w-0 overflow-x-hidden bg-[#f6f8fb] text-slate-950"><header className="sticky top-0 z-20 border-b border-slate-200/80 bg-[#f6f8fb]/90 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-4"><Link href="/app" className="min-w-0 flex items-center gap-2 font-semibold tracking-tight"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-950 text-xs font-bold text-white">D</span><span className="truncate">Decision Control Plane</span></Link><nav className="hidden items-center gap-6 text-sm text-slate-600 md:flex"><a href="#quickstart">Quickstart</a><a href="#contracts">Contracts</a><a href="#architecture">Architecture</a><a href="#schema">Schema</a><a href="#guides">Guides</a><a href="#theory">Theory</a><a href="#checklist">Production checklist</a></nav><Link href="/app"><Button size="sm" className="shrink-0 bg-slate-950 hover:bg-slate-800">Open platform <ArrowRight className="ml-2 h-3.5 w-3.5" /></Button></Link></div></header>
-  <main className="min-w-0"><section className="border-b border-slate-200"><div className="mx-auto grid min-w-0 max-w-7xl gap-10 px-5 py-12 sm:py-20 lg:grid-cols-[1.08fr_0.92fr]"><div className="min-w-0"><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Developer portal</p><h1 className="mt-5 max-w-3xl break-words text-4xl font-semibold leading-[1.04] tracking-[-0.055em] text-slate-950 sm:text-5xl">Build governed decisions without recreating the control plane.</h1><p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">The SDK and Domain Adapter contract give external developers typed decision outcomes, tenant-scoped evidence, retry semantics, replay proof, and a safe path from shadow mode to production authority.</p><div className="mt-8 flex flex-wrap gap-3"><a href="#quickstart"><Button className="bg-blue-700 hover:bg-blue-800">Start SDK quickstart</Button></a><Link href="/app"><Button variant="outline" className="border-slate-300">See operator proof</Button></Link></div></div><div className="min-w-0 rounded-3xl bg-slate-950 p-5 shadow-[0_24px_60px_rgb(15,23,42,0.18)] sm:p-7"><div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300"><Code2 className="h-4 w-4" /> TypeScript</div><pre className="mt-6 max-w-full overflow-x-auto text-xs leading-7 text-slate-200 sm:text-sm"><code>{`const result = await dcp.evaluate({
-  tenantId: "tenant_acme",
-  idempotencyKey: "txn_01HV...",
-  subject: { type: "customer", id: "cus_421" },
-  activity: transaction,
-  policy: { bundle: "aml-screening@27" },
-  evidence: { manifest: "state@2.1.0" }
-});
+  const [query, setQuery] = useState("");
+  const [kind, setKind] = useState<DocumentationEntry["kind"] | "All">("All");
+  const [selectedId, setSelectedId] = useState("architecture-handbook");
+  const results = useMemo(() => searchDocumentation(query, kind), [query, kind]);
+  const selected = documentationCatalog.find(entry => entry.id === selectedId) ?? results[0] ?? documentationCatalog[0];
+  const related = documentationCatalog.filter(entry => selected.relatedIds.includes(entry.id));
 
-if (result.disposition === "allowed") {
-  await actionRail.submit(result.action);
-}
-// held, rejected, retry_later and fence_required
-// stay explicit and are never coerced to allow.`}</code></pre></div></div></section>
-  <section id="quickstart" className="mx-auto max-w-7xl px-5 py-20"><div className="max-w-2xl"><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Guided onboarding</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em]">The pilot path is evidence-first.</h2></div><div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-5">{steps.map(([number, title, detail]) => <article key={number} className="border-t-2 border-slate-950 bg-white p-5 shadow-[0_8px_30px_rgb(15,23,42,0.04)]"><p className="text-xs font-bold tracking-[0.15em] text-blue-700">{number}</p><h3 className="mt-5 font-semibold text-slate-950">{title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{detail}</p></article>)}</div></section>
-  <section id="contracts" className="bg-white"><div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 lg:grid-cols-[0.82fr_1.18fr]"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Contracts & semantics</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em]">Every result is typed. Safety is never inferred from prose.</h2><div className="mt-8 space-y-5">{[[Braces, "Request contract", "Tenant ID, source timestamp, idempotency key, canonical subject/activity, policy bundle, evidence manifest, purpose, and deadline."],[ShieldCheck, "Outcome contract", "allowed, held, rejected, retry_later, or fence_required with reasons, version binding, and trace references."],[Layers3, "Schema contract", "Semantic version, compatibility class, content hash, provenance, state/policy epochs, and retained replay evidence."],[FileCheck2, "Error & retry semantics", "Retry only with the same idempotency key. Never retry fence_required as an allow. Treat unknown evidence as an explicit hold path."]].map(([Icon, title, detail]) => <div key={title as string} className="flex gap-4"><div className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-700"><Icon className="h-4 w-4" /></div><div><h3 className="font-semibold text-slate-950">{title as string}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{detail as string}</p></div></div>)}</div></div><div className="rounded-3xl bg-[#0b1020] p-7 text-slate-100"><div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300"><Braces className="h-4 w-4" /> Response envelope</div><pre className="mt-6 overflow-x-auto text-sm leading-7"><code>{`{
-  "decisionId": "dec_01HV...",
-  "disposition": "held",
-  "reasonCodes": ["candidate_match"],
-  "action": { "type": "hold_for_review" },
-  "binding": {
-    "tenantId": "tenant_acme",
-    "policyVersion": "aml-screening@27",
-    "stateManifest": "state@2.1.0",
-    "ownershipEpoch": 48
-  },
-  "audit": { "durable": true, "traceId": "tr_..." }
-}`}</code></pre></div></div></section>
-  <DeveloperPlayground />
-  <ArchitectureBlueprint />
-  <ExtensionContract />
-  <SchemaReference />
-  <section id="guides" className="mx-auto max-w-7xl px-5 py-20"><div className="grid gap-6 md:grid-cols-3">{[[PlayCircle,"Shadow mode","Run incumbent and DCP decisions side-by-side. Compare dispositions, reason codes, policy versions, and replay evidence before transferring authority."],[BookOpenText,"Replay guide","Reconstruct a decision from the pinned policy, state manifest, evidence, and immutable event sequence. Record divergences; never rewrite history."],[CheckCircle2,"Migration guide","Use expand, dual-write, backfill, read canary, write canary, and contract. The canary controller stops at ownership, RPO, audit, or approval failure."]].map(([Icon, title, detail]) => <article key={title as string} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgb(15,23,42,0.04)]"><Icon className="h-5 w-5 text-blue-700" /><h3 className="mt-5 text-lg font-semibold">{title as string}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{detail as string}</p></article>)}</div></section>
-  <section id="theory" className="border-y border-slate-200 bg-white"><div className="mx-auto max-w-7xl px-5 py-20"><div className="grid gap-12 lg:grid-cols-[0.82fr_1.18fr]"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Reusable theory</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em]">Decision-state evolution is broader than migration.</h2><p className="mt-5 text-sm leading-7 text-slate-600">The platform treats a decision state as <span className="font-mono font-semibold text-slate-950">S = (I, E, P, M, A, O, T)</span>: identity, evidence, policy, meaning/state manifest, action authority, outcome, and time. A consequential transition is safe only when those bindings remain inspectable and replayable.</p><p className="mt-4 text-sm leading-7 text-slate-600">The same control loop applies to financial-crime screening, supplier risk, counterparty exposure, procurement eligibility, clinical triage, and other contextual relationship decisions. The domain model changes; the evidence-to-action governance remains stable.</p></div><div className="grid gap-3 sm:grid-cols-2">{[["Identity", "Subjects, relationships, tenants, purposes, and correlation remain stable across changes."],["Evidence", "Claims, provenance, confidence, source time, and trace hash remain attached to the outcome."],["Versioned meaning", "Policy bundle and semantic state manifest are bound to the result, not looked up after the fact."],["Authority", "Ownership epoch, RPO admission, fencing, and approvals decide whether action may proceed."],["Outcome", "Action lifecycle, idempotency, audit durability, and recovery behavior are explicit."],["Time", "Effective policy time, event time, decision time, and ownership time avoid retroactive ambiguity."]].map(([label, detail]) => <div key={label} className="border-l-2 border-blue-700 bg-slate-50 p-4"><p className="font-semibold text-slate-950">{label}</p><p className="mt-2 text-xs leading-5 text-slate-600">{detail}</p></div>)}</div></div><div className="mt-12 grid gap-5 border-t border-slate-200 pt-10 lg:grid-cols-3"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Stable for the decade</p><p className="mt-3 text-sm leading-6 text-slate-700">Canonical decision episodes, tenant context, version binding, explicit unknown/conflict states, immutable audit, deterministic replay, ownership epochs, RPO admission, and idempotent actions.</p></div><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Pluggable by design</p><p className="mt-3 text-sm leading-6 text-slate-700">Industry taxonomies, data connectors, models, candidate generation, reasoning engines, action rails, storage engines, and visual analytics.</p></div><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Pilot deployment path</p><p className="mt-3 text-sm leading-6 text-slate-700">Prove adapter conformance, shadow results, replay equivalence, and operational readiness before granting canary action authority; expand only with owned, durable evidence.</p></div></div></div></section>
-  <section className="mx-auto max-w-7xl px-5 py-20"><div className="grid gap-10 lg:grid-cols-[0.78fr_1.22fr]"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Return on Research</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em]">Do the work that compounds across domains.</h2><p className="mt-5 text-sm leading-7 text-slate-600">RoR prioritizes validation work that deepens reusable knowledge and engineering leverage while keeping proof cost and long-run maintenance legible.</p></div><div className="grid gap-3 sm:grid-cols-2">{[["Canonical decision & event model", "Knowledge value: high", "Engineering leverage: high", "Cross-domain applicability: high", "Validation cost: moderate", "Priority: now"],["RPO admission & fencing", "Knowledge value: high", "Engineering leverage: high", "Cross-domain applicability: high", "Validation cost: moderate", "Priority: now"],["Domain adapter packs", "Knowledge value: medium", "Engineering leverage: medium", "Cross-domain applicability: selective", "Validation cost: moderate", "Priority: after invariants"],["Advanced reasoning engines", "Knowledge value: variable", "Engineering leverage: modular", "Cross-domain applicability: variable", "Validation cost: high", "Priority: only behind stable contracts"]].map(([title, ...rows]) => <article key={title} className="rounded-2xl border border-slate-200 bg-white p-5"><h3 className="font-semibold text-slate-950">{title}</h3><div className="mt-4 space-y-1.5">{rows.map(row => <p key={row} className="text-xs leading-5 text-slate-600">{row}</p>)}</div></article>)}</div></div></section>
-  <section id="checklist" className="border-t border-slate-200 bg-slate-950"><div className="mx-auto max-w-7xl px-5 py-20 text-white"><p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Production checklist</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em]">Authority is earned by evidence.</h2><div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">{["Tenant context and role checks pass","Schema and adapter conformance pass","Shadow and replay divergence are explained","RPO, fencing, audit and action gates pass","Operator runbook and alerts are exercised","Rollback rehearsal is signed"].map(item => <div key={item} className="flex gap-3 border-t border-white/15 pt-4 text-sm leading-6 text-slate-300"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />{item}</div>)}</div></div></section>
-  </main></div>;
+  useEffect(() => {
+    if (results.length && !results.some(entry => entry.id === selectedId)) setSelectedId(results[0].id);
+  }, [results, selectedId]);
+
+  const clearSearch = () => {
+    setQuery("");
+    setKind("All");
+  };
+
+  return (
+    <div className="min-h-screen min-w-0 bg-[#f6f8fb] text-slate-950">
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-[#f6f8fb]/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-4">
+          <Link href="/app" className="flex min-w-0 items-center gap-2 font-semibold tracking-tight">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-950 text-xs font-bold text-white">D</span>
+            <span className="truncate">Decision Control Plane</span>
+          </Link>
+          <div className="hidden items-center gap-2 text-sm text-slate-500 sm:flex"><BookOpen className="h-4 w-4" /> Knowledge portal</div>
+          <Link href="/app/investigations"><Button size="sm" className="shrink-0 bg-slate-950 hover:bg-slate-800">Open investigations <ArrowRight className="ml-2 h-3.5 w-3.5" /></Button></Link>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl px-5 py-8 sm:py-12">
+        <section className="border-b border-slate-200 pb-8 sm:pb-10">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Application documentation</p>
+          <div className="mt-4 grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+            <div>
+              <h1 className="max-w-3xl text-4xl font-semibold tracking-[-0.055em] text-slate-950 sm:text-5xl">Find the proof behind the control plane.</h1>
+              <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600">Search the rendered theory, architecture handbook, business-process guidance, decision records, current release notes, and the repository research archive. Every page distinguishes the pilot’s validated controls from deferred production infrastructure.</p>
+            </div>
+            <div className="border-t border-slate-200 pt-5 text-sm leading-6 text-slate-600 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0"><p className="font-semibold text-slate-900">Cross-reference first</p><p className="mt-1">Use the related documents below each page to move from an invariant to an ADR, workflow guide, or relevant operator workspace without losing the architecture context.</p></div>
+          </div>
+        </section>
+
+        <section className="mt-8 grid min-w-0 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <aside className="min-w-0 self-start lg:sticky lg:top-24">
+            <div className="border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgb(15,23,42,0.05)]">
+              <label className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500" htmlFor="documentation-search">Search documentation</label>
+              <div className="mt-3 flex items-center gap-2 border border-slate-300 bg-slate-50 px-3 py-2 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+                <Search className="h-4 w-4 shrink-0 text-slate-500" />
+                <input id="documentation-search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Replay, RPO, ADR, CMMN…" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
+                {query ? <button type="button" onClick={clearSearch} className="text-slate-500 hover:text-slate-950" aria-label="Clear documentation search"><X className="h-4 w-4" /></button> : null}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {kinds.map(item => <button key={item} type="button" onClick={() => setKind(item)} className={`border px-2.5 py-1 text-xs font-medium ${kind === item ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"}`}>{item}</button>)}
+              </div>
+              <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><span className="text-xs text-slate-500">{results.length} rendered records</span>{(query || kind !== "All") ? <button type="button" onClick={clearSearch} className="text-xs font-semibold text-blue-700 hover:text-blue-900">Reset filters</button> : null}</div>
+            </div>
+
+            <div className="mt-3 max-h-[420px] space-y-1 overflow-y-auto border border-slate-200 bg-white p-2 shadow-[0_10px_30px_rgb(15,23,42,0.04)] lg:max-h-[520px]">
+              {results.map(entry => {
+                const Icon = kindIcon(entry.kind);
+                const active = entry.id === selected.id;
+                return <button key={entry.id} type="button" onClick={() => setSelectedId(entry.id)} className={`w-full border-l-2 px-3 py-3 text-left ${active ? "border-blue-700 bg-blue-50" : "border-transparent hover:border-slate-300 hover:bg-slate-50"}`}>
+                  <div className="flex items-center gap-2"><Icon className={`h-4 w-4 shrink-0 ${active ? "text-blue-700" : "text-slate-400"}`} /><span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">{entry.kind}</span></div>
+                  <p className="mt-2 text-sm font-semibold leading-5 text-slate-900">{entry.title}</p>
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{entry.summary}</p>
+                </button>;
+              })}
+              {!results.length ? <div className="p-5 text-center"><p className="text-sm font-semibold text-slate-900">No rendered record matches.</p><p className="mt-2 text-xs leading-5 text-slate-500">Try an invariant, process term, architecture layer, or ADR topic.</p><Button variant="outline" size="sm" onClick={clearSearch} className="mt-4">Reset search</Button></div> : null}
+            </div>
+          </aside>
+
+          <article className="min-w-0 border border-slate-200 bg-white p-5 shadow-[0_12px_36px_rgb(15,23,42,0.06)] sm:p-8">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-6">
+              <div className="min-w-0"><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-700">{selected.kind}<span className="text-slate-300">/</span><span className="normal-case tracking-normal text-slate-500">{selected.sourcePath}</span></div><h2 className="mt-3 text-3xl font-semibold tracking-[-0.045em] text-slate-950 sm:text-4xl">{selected.title}</h2><p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">{selected.summary}</p></div>
+              {selected.workspaceHref && selected.workspaceLabel ? <Link href={selected.workspaceHref}><Button variant="outline" className="border-slate-300">{selected.workspaceLabel}<ArrowRight className="ml-2 h-4 w-4" /></Button></Link> : null}
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">{selected.tags.map(tag => <span key={tag} className="border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">{tag}</span>)}</div>
+            <div className="mt-8 space-y-8">{selected.sections.map(section => <section key={section.heading}><h3 className="text-lg font-semibold tracking-[-0.02em] text-slate-950">{section.heading}</h3><div className="mt-3 space-y-3 text-sm leading-7 text-slate-600">{section.body.map(paragraph => <p key={paragraph}>{paragraph}</p>)}</div>{section.bullets ? <ul className="mt-4 space-y-2 border-l-2 border-blue-600 pl-4 text-sm leading-6 text-slate-700">{section.bullets.map(item => <li key={item}>{item}</li>)}</ul> : null}</section>)}</div>
+
+            <section className="mt-10 border-t border-slate-200 pt-6"><p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Cross-references</p><div className="mt-4 grid gap-3 sm:grid-cols-2">{related.map(entry => <button key={entry.id} type="button" onClick={() => setSelectedId(entry.id)} className="group border border-slate-200 p-4 text-left hover:border-blue-300 hover:bg-blue-50"><p className="text-[11px] font-bold uppercase tracking-[0.13em] text-slate-500">{entry.kind}</p><p className="mt-2 flex items-center justify-between gap-3 text-sm font-semibold text-slate-900">{entry.title}<ArrowRight className="h-4 w-4 shrink-0 text-blue-700 transition-transform group-hover:translate-x-0.5" /></p><p className="mt-2 text-xs leading-5 text-slate-500">{entry.summary}</p></button>)}</div></section>
+            <p className="mt-8 border-t border-slate-100 pt-5 text-xs leading-5 text-slate-500">This portal renders the curated application documentation catalog. The repository source path identifies the maintained Markdown record. Pilot boundaries in the current architecture and release documents take precedence over historical research proposals.</p>
+          </article>
+        </section>
+      </main>
+    </div>
+  );
 }

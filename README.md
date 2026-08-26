@@ -22,7 +22,7 @@ The application is a React, TypeScript, Express, tRPC, Drizzle, and MySQL/TiDB p
 | **Decision-state governance**  | Versioned state manifests, policy/version comparison, provenance visibility, compatibility signals, and explicit unknown/conflict posture.                                                    |
 | **Rollout safety**             | Migration timeline, phase evidence, canary posture, ownership/RPO/audit/replay/approval gates, recommendations, and rollback context.                                                         |
 | **Replay and evidence**        | Deterministic replay inspection, side-by-side semantic diff, replay assertions, verification, evidence links, and retained audit references.                                                  |
-| **Investigation workflow**     | BPMN/DMN/CMMN-aware case workspace, accountable outcomes, role-specific assignment, manual escalation queues, outcome filtering, deterministic sorting, and cross-workspace trace navigation. |
+| **Investigation workflow**     | BPMN/DMN/CMMN-aware case workspace, accountable outcomes, advanced queue search/filter/sort, private saved views, named or role-based assignment, due/SLA targets, manual escalation, comments, attachment references, immutable activity evidence, and cross-workspace trace navigation. |
 | **Evidence-package integrity** | Canonical JSON hashing, server-held HMAC-SHA-256 manifest signatures, signature verification, tenant-scoped retention-policy records, and retained export references.                         |
 | **Integration foundation**     | Tenant-scoped pilot API keys, bounded JSON-RPC MCP endpoint, SDK/CLI examples, simulated webhook subscriptions/deliveries, searchable diagnostics, and controlled local retry audit.          |
 | **Operator experience**        | Responsive dashboard navigation, dark mode, compact tenant-scoped loading skeletons, contextual notifications, and readable safety status.                                                    |
@@ -61,7 +61,7 @@ The architecture deliberately separates **recording or recommending** an outcome
 | `/app/versions`       | Version safety and compatibility workspace.                                                                                     |
 | `/app/evidence`       | Audit and replay-evidence ledger.                                                                                               |
 | `/app/integrations`   | Pilot API keys, bounded MCP, SDK/CLI material, simulated webhooks, diagnostics, controlled retry, and audit export.             |
-| `/app/docs`           | In-product developer documentation.                                                                                             |
+| `/app/docs`           | Searchable in-application documentation portal for theory, architecture handbook, ADRs, guides, release notes, and the research archive. |
 
 ## Pilot boundary
 
@@ -95,7 +95,7 @@ pnpm check    # TypeScript without emitting files
 pnpm build    # Vite client build + bundled server build
 ```
 
-The latest workflow-management release validation passed **24 tests across 7 Vitest files**, TypeScript checking, and the production build. Vite may warn that the client bundle exceeds its default 500 kB chunk guidance; the warning is non-blocking and should be addressed with deliberate code-splitting work rather than suppressed.
+The latest knowledge-portal and investigation-lifecycle validation passed **36 tests across 11 Vitest files**, TypeScript checking, and the production build. Vite may warn that the client bundle exceeds its default 500 kB chunk guidance; the warning is non-blocking and should be addressed with deliberate code-splitting work rather than suppressed.
 
 ### Database changes
 
@@ -123,6 +123,9 @@ todo.md                  Durable implementation backlog
 | [`docs/governed-investigation-workflow.md`](docs/governed-investigation-workflow.md)                   | Observe → compare → interpret → act → retain workflow.                                      |
 | [`docs/bpmn-aware-investigation-case-flow.md`](docs/bpmn-aware-investigation-case-flow.md)             | Why BPMN, DMN, and CMMN complement each other in a governed investigation.                  |
 | [`docs/workflow-management-release-notes.md`](docs/workflow-management-release-notes.md)               | Role assignment, escalation queues, signed manifests, and retention-bound evidence exports. |
+| [`docs/capability-roadmap.md`](docs/capability-roadmap.md)                                               | Capability-led product roadmap and deliberate deferrals. |
+| [`docs/architecture-handbook.md`](docs/architecture-handbook.md)                                         | Layered architecture, safety separations, and process-model integration. |
+| [`docs/knowledge-portal-investigation-lifecycle-release-notes.md`](docs/knowledge-portal-investigation-lifecycle-release-notes.md) | Searchable portal, advanced queues, ownership, service-level, comments, attachments, and activity release. |
 | [`docs/validation-notes-caseflow.md`](docs/validation-notes-caseflow.md)                               | Browser and automated evidence for the investigation-case flow.                             |
 
 ### Complete research and presentation archive

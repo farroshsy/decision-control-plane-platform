@@ -219,6 +219,9 @@ export const investigationCaseAssignments = mysqlTable(
     assignedByUserId: int("assignedByUserId").notNull(),
     status: mysqlEnum("status", ["assigned", "accepted", "reassigned", "closed"]).default("assigned").notNull(),
     rationale: text("rationale").notNull(),
+    dueAt: timestamp("dueAt"),
+    serviceLevelTargetMinutes: int("serviceLevelTargetMinutes"),
+    serviceLevelTargetAt: timestamp("serviceLevelTargetAt"),
     assignedAt: timestamp("assignedAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -238,6 +241,8 @@ export const investigationEscalations = mysqlTable(
     priority: mysqlEnum("priority", ["standard", "elevated", "critical"]).default("standard").notNull(),
     status: mysqlEnum("status", ["queued", "acknowledged", "resolved", "cancelled"]).default("queued").notNull(),
     reason: text("reason").notNull(),
+    serviceLevelTargetMinutes: int("serviceLevelTargetMinutes"),
+    serviceLevelTargetAt: timestamp("serviceLevelTargetAt"),
     createdByUserId: int("createdByUserId").notNull(),
     acknowledgedByUserId: int("acknowledgedByUserId"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -247,6 +252,76 @@ export const investigationEscalations = mysqlTable(
     index("investigation_escalations_tenant_idx").on(table.tenantId, table.updatedAt),
     index("investigation_escalations_queue_idx").on(table.tenantId, table.queue, table.status, table.updatedAt),
     index("investigation_escalations_case_idx").on(table.tenantId, table.caseId, table.updatedAt),
+  ]
+);
+
+export const investigationComments = mysqlTable(
+  "investigationComments",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    caseId: varchar("caseId", { length: 64 }).notNull(),
+    body: text("body").notNull(),
+    createdByUserId: int("createdByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("investigation_comments_case_idx").on(table.tenantId, table.caseId, table.createdAt),
+  ]
+);
+
+export const investigationAttachments = mysqlTable(
+  "investigationAttachments",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    caseId: varchar("caseId", { length: 64 }).notNull(),
+    fileName: varchar("fileName", { length: 240 }).notNull(),
+    contentType: varchar("contentType", { length: 120 }).notNull(),
+    sizeBytes: int("sizeBytes").notNull(),
+    storageKey: varchar("storageKey", { length: 512 }).notNull(),
+    storageUrl: varchar("storageUrl", { length: 640 }).notNull(),
+    summary: varchar("summary", { length: 280 }),
+    uploadedByUserId: int("uploadedByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("investigation_attachments_case_idx").on(table.tenantId, table.caseId, table.createdAt),
+  ]
+);
+
+export const investigationActivities = mysqlTable(
+  "investigationActivities",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    caseId: varchar("caseId", { length: 64 }).notNull(),
+    activityKind: mysqlEnum("activityKind", ["case_created", "outcome_recorded", "assignment_recorded", "escalation_queued", "escalation_acknowledged", "comment_added", "attachment_added"]).notNull(),
+    summary: varchar("summary", { length: 280 }).notNull(),
+    detailJson: text("detailJson").notNull(),
+    actorUserId: int("actorUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("investigation_activities_case_idx").on(table.tenantId, table.caseId, table.createdAt),
+    index("investigation_activities_tenant_idx").on(table.tenantId, table.createdAt),
+  ]
+);
+
+export const investigationSavedViews = mysqlTable(
+  "investigationSavedViews",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    ownerUserId: int("ownerUserId").notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    filterJson: text("filterJson").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    uniqueIndex("investigation_saved_views_owner_name_idx").on(table.tenantId, table.ownerUserId, table.name),
+    index("investigation_saved_views_tenant_owner_idx").on(table.tenantId, table.ownerUserId, table.updatedAt),
   ]
 );
 

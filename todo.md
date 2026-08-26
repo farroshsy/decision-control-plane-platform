@@ -56,3 +56,17 @@
 - [x] Add a documentation index that maps theory, pilot planning, process models, operational guidance, integration contracts, and presentation assets to their repository locations.
 - [x] Write a comprehensive root README covering the product purpose, architecture, pilot boundaries, local development, validation, and documentation navigation.
 - [x] Validate the documentation archive and README links, then checkpoint the consolidated repository update.
+- [x] Define a capability roadmap and bounded investigation-lifecycle requirements from the supplied operator-productivity, governance, evidence, and lifecycle material.
+- [x] Build an in-application Documentation Portal that renders theory, architecture, current guides, archive records, and cross-reference navigation with full-text search.
+- [x] Add tenant-scoped advanced investigation search, outcome filtering, sorting, saved views, and workload-oriented queue management.
+- [x] Add accountable investigator assignment, per-case due dates, service-level targets, escalation posture, comments, attachment references, and immutable activity history.
+- [x] Validate, document, and checkpoint the knowledge-portal and investigation-lifecycle expansion.
+- [x] Browser-verify signed-in investigation lifecycle hydration, search, filtering, sorting, saved views, workload counts, and error-free queue rendering.
+- [x] Fix and verify named-assignee lookup, then validate assignment with a due date and service-level target end to end.
+- [x] Browser-validate comment creation, attachment reference retention, escalation posture, and immutable activity-history updates in the tenant-scoped investigation workspace.
+- [x] Add focused regression coverage for lifecycle queue behavior and retained case mutations before the release checkpoint.
+- [x] Save the knowledge-portal and investigation-lifecycle release checkpoint after completing the remaining signed-in validation.
+- [x] Browser-validate the outcome, owner-queue, and service-level filter controls in the tenant-scoped investigation queue.
+- [x] Add focused automated coverage for retained lifecycle mutation contracts: assignment, escalation, comment, and attachment activity evidence.
+- [x] Save the final knowledge-portal and investigation-lifecycle release checkpoint after the remaining direct filter and mutation validation.
+- [x] Save a new release checkpoint for the completed knowledge-portal and investigation-lifecycle expansion.

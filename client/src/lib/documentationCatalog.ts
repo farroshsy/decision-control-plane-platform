@@ -1,0 +1,191 @@
+export type DocumentationSection = {
+  heading: string;
+  body: string[];
+  bullets?: string[];
+};
+
+export type DocumentationEntry = {
+  id: string;
+  title: string;
+  kind: "Theory" | "Architecture" | "Guide" | "ADR" | "Release" | "Research archive";
+  summary: string;
+  tags: string[];
+  sourcePath: string;
+  relatedIds: string[];
+  workspaceHref?: string;
+  workspaceLabel?: string;
+  sections: DocumentationSection[];
+};
+
+export const documentationCatalog: DocumentationEntry[] = [
+  {
+    id: "decision-state-theory",
+    title: "Decision-State Evolution Theory",
+    kind: "Theory",
+    summary: "The reusable theory for governing consequential decisions as evidence-bound, replayable state transitions.",
+    tags: ["S=(I,E,P,M,A,O,T)", "replay", "invariants", "tenant scope", "authority"],
+    sourcePath: "docs/decision-state-evolution-theory.md",
+    relatedIds: ["architecture-handbook", "adr-canonical-episode", "bpmn-case-flow"],
+    workspaceHref: "/app/state",
+    workspaceLabel: "Open State Evolution",
+    sections: [
+      { heading: "Core proposition", body: ["A decision is not only an outcome. It is a time-bound relationship between identity, evidence, policy semantics, state meaning, authority, action, and auditability.", "The stable model is S = (I, E, P, M, A, O, T): identity, evidence, policy, manifest/state, authority, outcome, and time."] },
+      { heading: "Stable kernel", body: ["Canonical decision episodes, explicit unknown and conflict states, immutable audit, deterministic replay, ownership epochs, RPO admission, fencing, and idempotent actions should outlive any particular domain model or reasoning engine."], bullets: ["Do not infer allow from stale or unknown state.", "Bind policy and manifest versions to the recorded result.", "Keep outcome evidence separate from execution authority."] },
+    ],
+  },
+  {
+    id: "architecture-handbook",
+    title: "Architecture Handbook",
+    kind: "Architecture",
+    summary: "How the domain adapter, stable decision kernel, safety gates, investigation lifecycle, evidence lifecycle, and integration boundary work together.",
+    tags: ["domain adapter", "policy interpreter", "safety gates", "BPMN", "CMMN", "DMN"],
+    sourcePath: "docs/architecture-handbook.md",
+    relatedIds: ["decision-state-theory", "adr-canonical-episode", "adr-pilot-boundary", "adr-investigation-ownership"],
+    workspaceHref: "/app/operations",
+    workspaceLabel: "Open Control Room",
+    sections: [
+      { heading: "Layered responsibility", body: ["Domain adapters normalize source events; the decision kernel binds evidence and versions; safety controls decide admission; investigation cases coordinate human work; retained evidence supports review; integrations expose bounded access."], bullets: ["Adapters and policy interpreters are pluggable.", "Authority gates are stable and explicit.", "A recommendation does not execute an action."] },
+      { heading: "Process complementarity", body: ["BPMN-like phases make migration stop rules deterministic. DMN-style decisions make comparison and recommendation logic explicit. CMMN-style cases hold the discretionary investigation work that does not fit a linear flow."] },
+      { heading: "Pilot boundary", body: ["Service-level posture is calculated at read time. This application does not run a background timer, automatic dispatch, external delivery, or automatic escalation worker."] },
+    ],
+  },
+  {
+    id: "capability-roadmap",
+    title: "Capability-Led Roadmap",
+    kind: "Guide",
+    summary: "A roadmap that prioritizes durable control-plane capabilities instead of accumulating unrelated screens.",
+    tags: ["Return on Research", "investigation", "governance", "simulation", "evidence lifecycle"],
+    sourcePath: "docs/capability-roadmap.md",
+    relatedIds: ["investigation-workflow", "architecture-handbook", "research-archive"],
+    workspaceHref: "/app/investigations",
+    workspaceLabel: "Open Investigations",
+    sections: [
+      { heading: "Operator lifecycle", body: ["The end-to-end journey is Observe → Investigate → Compare → Interpret → Recommend → Approve → Execute → Verify → Retain → Review.", "This increment strengthens the ownership, service-level, evidence, and documentation layer between investigation and recommendation. Approval and execution remain independently protected." ] },
+      { heading: "Current priority", body: ["Investigation productivity and evidence lifecycle work offer high engineering leverage because they improve accountable human case work around every domain adapter without changing the stable kernel."] },
+    ],
+  },
+  {
+    id: "bpmn-case-flow",
+    title: "BPMN-Aware Investigation Case Flow",
+    kind: "Guide",
+    summary: "Why deterministic process gates and discretionary case management must coexist in a governed investigation workflow.",
+    tags: ["BPMN", "DMN", "CMMN", "investigation", "rollback recommendation"],
+    sourcePath: "docs/bpmn-aware-investigation-case-flow.md",
+    relatedIds: ["investigation-workflow", "adr-investigation-ownership", "architecture-handbook"],
+    workspaceHref: "/app/migration",
+    workspaceLabel: "Open Migration Timeline",
+    sections: [
+      { heading: "Deterministic flow and discretionary work", body: ["Migration controls follow explicit evidence and stop rules. A replay divergence can then open a case that accepts evidence, comments, accountable outcomes, assignments, and escalations without turning that case into an execution rail."] },
+      { heading: "Authority separation", body: ["A case may conclude rollback is required. The conclusion is retained evidence and recommendation; the safety-gated rollback control remains the only path that can change rollout state."] },
+    ],
+  },
+  {
+    id: "investigation-workflow",
+    title: "Governed Investigation Workflow",
+    kind: "Guide",
+    summary: "Observe, compare, interpret, act through protected controls, retain evidence, and review the case lifecycle.",
+    tags: ["replay diff", "semantic comparison", "assignment", "escalation", "activity history"],
+    sourcePath: "docs/governed-investigation-workflow.md",
+    relatedIds: ["bpmn-case-flow", "adr-investigation-ownership", "workflow-release"],
+    workspaceHref: "/app/investigations",
+    workspaceLabel: "Open Investigation Workspace",
+    sections: [
+      { heading: "Evidence-first investigation", body: ["Operators move from a replay divergence to semantic comparison, evidence bindings, an accountable outcome, a recommendation or approval record, and retained audit evidence."], bullets: ["Search and saved views reduce queue friction.", "Named ownership and due targets make work accountable.", "Comments and attachment metadata preserve rationale without granting execution authority."] },
+    ],
+  },
+  {
+    id: "workflow-release",
+    title: "Workflow Management Release Notes",
+    kind: "Release",
+    summary: "The bounded controls for role queues, manual escalation, signed manifests, and retention-aware replay exports.",
+    tags: ["assignment", "escalation", "signed manifest", "retention", "pilot boundary"],
+    sourcePath: "docs/workflow-management-release-notes.md",
+    relatedIds: ["adr-pilot-boundary", "adr-investigation-ownership", "investigation-workflow"],
+    workspaceHref: "/app/replay",
+    workspaceLabel: "Open Replay Explorer",
+    sections: [
+      { heading: "Evidence integrity", body: ["Replay packages use canonical JSON hashing with server-held HMAC signatures and a retained tenant-scoped manifest. Verification proves the stored pilot manifest against the server key, not third-party notarization or legal admissibility."] },
+      { heading: "Manual operating controls", body: ["Assignment and escalation records are local tenant-scoped workflow evidence. Simulated retries record local attempts and do not make outbound receiver calls."] },
+    ],
+  },
+  {
+    id: "lifecycle-release",
+    title: "Knowledge Portal and Investigation Lifecycle Release Notes",
+    kind: "Release",
+    summary: "The bounded implementation of searchable documentation, advanced queues, accountable ownership, service-level posture, comments, attachments, and immutable activity evidence.",
+    tags: ["documentation portal", "saved views", "due dates", "SLA", "comments", "attachments"],
+    sourcePath: "docs/knowledge-portal-investigation-lifecycle-release-notes.md",
+    relatedIds: ["architecture-handbook", "adr-investigation-ownership", "capability-roadmap", "investigation-workflow"],
+    workspaceHref: "/app/investigations",
+    workspaceLabel: "Open Investigation Lifecycle",
+    sections: [
+      { heading: "Delivered operating layer", body: ["The portal makes theory, architecture, ADRs, release notes, and the research archive searchable in the application. The investigation workspace adds queue search, filtering, sorting, private saved views, workload posture, named or role-based ownership, due targets, service-level targets, comments, attachment references, and immutable activity records."] },
+      { heading: "Safety boundary", body: ["No persistent worker or in-process timer is added. Service-level posture is read-time calculation; no automatic notification, dispatch, escalation, execution, closure, or deletion occurs in this pilot."] },
+    ],
+  },
+  {
+    id: "adr-canonical-episode",
+    title: "ADR 0001: Canonical Decision Episode",
+    kind: "ADR",
+    summary: "Preserve the canonical decision episode as the stable kernel across domains.",
+    tags: ["ADR", "canonical model", "cross-domain", "kernel"],
+    sourcePath: "docs/adr/0001-canonical-decision-episode.md",
+    relatedIds: ["decision-state-theory", "architecture-handbook"],
+    sections: [
+      { heading: "Decision", body: ["The platform preserves S = (I, E, P, M, A, O, T) as the stable kernel. Domain adapters translate local models into this kernel rather than replacing it."] },
+      { heading: "Consequence", body: ["Replay, evidence provenance, tenant isolation, ownership/RPO admission, and auditability evolve once while domain taxonomies and reasoning surfaces remain replaceable."] },
+    ],
+  },
+  {
+    id: "adr-pilot-boundary",
+    title: "ADR 0002: Pilot Integration Boundary",
+    kind: "ADR",
+    summary: "Keep simulated pilot integration records explicit instead of claiming unvalidated production infrastructure.",
+    tags: ["ADR", "MCP", "webhooks", "simulation", "integration"],
+    sourcePath: "docs/adr/0002-pilot-integration-boundary.md",
+    relatedIds: ["workflow-release", "architecture-handbook"],
+    workspaceHref: "/app/integrations",
+    workspaceLabel: "Open Integrations",
+    sections: [
+      { heading: "Decision", body: ["Webhook retries are database-backed simulations. MCP is request/response JSON-RPC. Manifest signatures are server-held integrity records. These controls do not claim external delivery guarantees, streaming, queues, or automatic infrastructure control."] },
+    ],
+  },
+  {
+    id: "adr-investigation-ownership",
+    title: "ADR 0003: Investigation Lifecycle Ownership",
+    kind: "ADR",
+    summary: "Keep human investigation work accountable and separate from approval or execution authority.",
+    tags: ["ADR", "ownership", "SLA", "comments", "attachments", "activity history"],
+    sourcePath: "docs/adr/0003-investigation-lifecycle-ownership.md",
+    relatedIds: ["investigation-workflow", "bpmn-case-flow", "capability-roadmap"],
+    workspaceHref: "/app/investigations",
+    workspaceLabel: "Open Case Workspace",
+    sections: [
+      { heading: "Decision", body: ["Cases may have named or role-based ownership, due targets, manually created escalation targets, immutable comments, attachment metadata, activity history, and private saved views. Service-level posture is evaluated when the case is read, without a background worker."] },
+    ],
+  },
+  {
+    id: "research-archive",
+    title: "Research and Presentation Archive",
+    kind: "Research archive",
+    summary: "A structured repository archive of theory, plans, operational guidance, process research, technical scripts, and editable slide-project sources.",
+    tags: ["research", "plans", "runbooks", "presentation source", "Return on Research"],
+    sourcePath: "docs/research-archive/README.md",
+    relatedIds: ["capability-roadmap", "decision-state-theory", "architecture-handbook"],
+    sections: [
+      { heading: "Archive map", body: ["The archive is structured around decision infrastructure, architecture and contracts, resilience validation, governance and migration, operations and active-active safety, business processes, pilot integration, economics and leverage, scripts, and source presentation projects."], bullets: ["Decision Infrastructure and canonical schema work.", "Migration, RPO, fencing, observability, and runbook material.", "BPMN, DMN, CMMN, business process, and stakeholder research.", "Six editable slide-project source folders, preserved without fabricating missing office binaries."] },
+      { heading: "How to interpret it", body: ["Archive records explain the lineage of the product. Current release notes and the Architecture Handbook define what the application actually implements and which pilot boundaries apply today."] },
+    ],
+  },
+];
+
+export function searchDocumentation(query: string, kind: DocumentationEntry["kind"] | "All") {
+  const normalizeForSearch = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const normalized = normalizeForSearch(query);
+  return documentationCatalog.filter(entry => {
+    if (kind !== "All" && entry.kind !== kind) return false;
+    if (!normalized) return true;
+    const searchable = normalizeForSearch([entry.title, entry.kind, entry.summary, entry.sourcePath, ...entry.tags, ...entry.sections.flatMap(section => [section.heading, ...section.body, ...(section.bullets ?? [])])].join(" "));
+    return searchable.includes(normalized);
+  });
+}

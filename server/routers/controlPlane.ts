@@ -28,13 +28,24 @@ export const controlPlaneRouter = router({
     .input(tenantInput.extend({ caseId: z.string().min(3).max(64).optional(), decisionId: z.string().min(3).max(96).optional(), rolloutId: z.string().min(3).max(64).optional() }))
     .query(({ ctx, input }) => expansion.investigationCaseDetail(ctx.user.id, input.tenantId, input)),
   investigationCaseQueue: protectedProcedure
+    .input(tenantInput.extend({
+      search: z.string().max(180).optional(),
+      status: z.enum(["open", "confirmed", "explained", "accepted", "rollback_required", "closed"]).optional(),
+      assignedRole: z.enum(["platform_operator", "compliance_operator", "customer_operator"]).optional(),
+      assignedToUserId: z.number().int().positive().optional(),
+      serviceLevelState: z.enum(["not_set", "on_track", "due_soon", "overdue"]).optional(),
+      escalationOnly: z.boolean().optional(),
+      sort: z.enum(["updated_desc", "due_asc", "service_level_asc", "priority_desc", "status_asc"]).optional(),
+    }))
+    .query(({ ctx, input }) => expansion.investigationCaseQueue(ctx.user.id, input.tenantId, input)),
+  investigationCaseAssignees: protectedProcedure
     .input(tenantInput)
-    .query(({ ctx, input }) => expansion.investigationCaseQueue(ctx.user.id, input.tenantId)),
+    .query(({ ctx, input }) => expansion.investigationCaseAssignees(ctx.user.id, input.tenantId)),
   assignInvestigationCase: protectedProcedure
-    .input(tenantInput.extend({ caseId: z.string().min(3).max(64), assignedRole: z.enum(["platform_operator", "compliance_operator", "customer_operator"]), rationale: z.string().min(12).max(1_000) }))
+    .input(tenantInput.extend({ caseId: z.string().min(3).max(64), assignedRole: z.enum(["platform_operator", "compliance_operator", "customer_operator"]), assignedToUserId: z.number().int().positive().optional(), rationale: z.string().min(12).max(1_000), dueAt: z.coerce.date().optional(), serviceLevelTargetMinutes: z.number().int().min(15).max(43_200).optional() }))
     .mutation(({ ctx, input }) => expansion.assignInvestigationCase(ctx.user.id, input.tenantId, input)),
   escalateInvestigationCase: protectedProcedure
-    .input(tenantInput.extend({ caseId: z.string().min(3).max(64), queue: z.enum(["compliance_review", "platform_safety", "customer_exception"]), priority: z.enum(["standard", "elevated", "critical"]), reason: z.string().min(12).max(1_000) }))
+    .input(tenantInput.extend({ caseId: z.string().min(3).max(64), queue: z.enum(["compliance_review", "platform_safety", "customer_exception"]), priority: z.enum(["standard", "elevated", "critical"]), reason: z.string().min(12).max(1_000), serviceLevelTargetMinutes: z.number().int().min(15).max(43_200).optional() }))
     .mutation(({ ctx, input }) => expansion.escalateInvestigationCase(ctx.user.id, input.tenantId, input)),
   acknowledgeInvestigationEscalation: protectedProcedure
     .input(tenantInput.extend({ escalationId: z.string().min(3).max(64) }))
@@ -51,6 +62,18 @@ export const controlPlaneRouter = router({
   updateInvestigationOutcome: protectedProcedure
     .input(tenantInput.extend({ caseId: z.string().min(3).max(64), status: z.enum(["confirmed", "explained", "accepted", "rollback_required"]), rationale: z.string().min(12).max(1_000) }))
     .mutation(({ ctx, input }) => expansion.updateInvestigationOutcome(ctx.user.id, input.tenantId, input)),
+  saveInvestigationView: protectedProcedure
+    .input(tenantInput.extend({ name: z.string().min(3).max(120), filters: z.object({ search: z.string().max(180).optional(), status: z.enum(["open", "confirmed", "explained", "accepted", "rollback_required", "closed"]).optional(), assignedRole: z.enum(["platform_operator", "compliance_operator", "customer_operator"]).optional(), assignedToUserId: z.number().int().positive().optional(), serviceLevelState: z.enum(["not_set", "on_track", "due_soon", "overdue"]).optional(), escalationOnly: z.boolean().optional(), sort: z.enum(["updated_desc", "due_asc", "service_level_asc", "priority_desc", "status_asc"]).optional() }) }))
+    .mutation(({ ctx, input }) => expansion.saveInvestigationView(ctx.user.id, input.tenantId, input)),
+  deleteInvestigationSavedView: protectedProcedure
+    .input(tenantInput.extend({ viewId: z.string().min(3).max(64) }))
+    .mutation(({ ctx, input }) => expansion.deleteInvestigationSavedView(ctx.user.id, input.tenantId, input.viewId)),
+  addInvestigationComment: protectedProcedure
+    .input(tenantInput.extend({ caseId: z.string().min(3).max(64), body: z.string().min(2).max(4_000) }))
+    .mutation(({ ctx, input }) => expansion.addInvestigationComment(ctx.user.id, input.tenantId, input)),
+  addInvestigationAttachment: protectedProcedure
+    .input(tenantInput.extend({ caseId: z.string().min(3).max(64), fileName: z.string().min(1).max(240), contentType: z.string().min(3).max(120), contentBase64: z.string().min(4).max(2_700_000), summary: z.string().max(280).optional() }))
+    .mutation(({ ctx, input }) => expansion.addInvestigationAttachment(ctx.user.id, input.tenantId, input)),
   exportReplayInvestigation: protectedProcedure
     .input(tenantInput.extend({ decisionId: z.string().min(3).max(96), baselineTraceId: z.string().min(3).max(64).optional(), candidateTraceId: z.string().min(3).max(64).optional() }))
     .mutation(({ ctx, input }) => expansion.exportReplayInvestigation(ctx.user.id, input.tenantId, input)),

@@ -10,25 +10,45 @@ import {
   integrationDeliveries,
   integrationEndpoints,
   integrationRetryAudits,
+  investigationActivities,
+  investigationAttachments,
   investigationCaseAssignments,
   investigationCases,
+  investigationComments,
   investigationEscalations,
   investigationRecords,
+  investigationSavedViews,
   mcpToolCalls,
   migrationRollouts,
   migrationSteps,
   replayTraces,
   stateManifests,
   telemetrySnapshots,
+  tenantMembers,
   tenants,
+  users,
 } from "../drizzle/schema";
 import { getDb } from "./db";
 import { advanceRollout, assertTenantRole, verifyReplay } from "./controlPlaneStore";
 import { signEvidencePackage, verifyEvidenceManifest, type SignedPackageManifest } from "./evidencePackagePolicy";
 import { controlledRetryPlan, outcomeRequiresSeparateAuthority, type InvestigationOutcomeStatus } from "./investigationCasePolicy";
+import { admitPilotAttachment, defaultEscalationTargetMinutes, serviceLevelPosture, serviceLevelTarget } from "./investigationLifecyclePolicy";
+import { filterAndSortLifecycleQueue } from "./investigationQueuePolicy";
+import { assignmentActivity, attachmentActivity, commentActivity, escalationActivity } from "./investigationMutationActivityPolicy";
+import { storagePut } from "./storage";
 
 type IntegrationScope = "read_only" | "replay_operator" | "rollout_operator";
 type ApiKeyRow = typeof integrationApiKeys.$inferSelect;
+type InvestigatorRole = "platform_operator" | "compliance_operator" | "customer_operator";
+type InvestigationQueueInput = {
+  search?: string;
+  status?: "open" | "confirmed" | "explained" | "accepted" | "rollback_required" | "closed";
+  assignedRole?: InvestigatorRole;
+  assignedToUserId?: number;
+  serviceLevelState?: "not_set" | "on_track" | "due_soon" | "overdue";
+  escalationOnly?: boolean;
+  sort?: "updated_desc" | "due_asc" | "service_level_asc" | "priority_desc" | "status_asc";
+};
 
 export const pilotMcpTools = [
   {
@@ -72,6 +92,28 @@ async function dbOrThrow() {
   const db = await getDb();
   if (!db) throw new Error("The Decision Control Plane database is unavailable.");
   return db;
+}
+
+async function recordInvestigationActivity(
+  db: any,
+  input: {
+    tenantId: string;
+    caseId: string;
+    activityKind: "case_created" | "outcome_recorded" | "assignment_recorded" | "escalation_queued" | "escalation_acknowledged" | "comment_added" | "attachment_added";
+    summary: string;
+    detail: Record<string, unknown>;
+    actorUserId: number;
+  }
+) {
+  await db.insert(investigationActivities).values({
+    id: `activity_${nanoid(16)}`,
+    tenantId: input.tenantId,
+    caseId: input.caseId,
+    activityKind: input.activityKind,
+    summary: input.summary,
+    detailJson: JSON.stringify({ ...input.detail, pilotOnly: true }),
+    actorUserId: input.actorUserId,
+  });
 }
 
 async function tenantFor(tenantId: string) {
@@ -127,9 +169,10 @@ export async function ensurePilotArtifacts(userId: number, tenantId: string) {
   const alreadySeeded = (await db.select({ id: replayTraces.id }).from(replayTraces).where(and(eq(replayTraces.tenantId, tenantId), eq(replayTraces.decisionId, "dec_pilot_001"))).limit(1))[0];
   if (alreadySeeded) {
     const existingCase = (await db.select({ id: investigationCases.id }).from(investigationCases).where(and(eq(investigationCases.tenantId, tenantId), eq(investigationCases.decisionId, "dec_pilot_001"))).limit(1))[0];
+    const caseId = existingCase?.id ?? `${tenantId}_case_pilot_001`;
     if (!existingCase) {
       const existingRollout = (await db.select().from(migrationRollouts).where(eq(migrationRollouts.tenantId, tenantId)).orderBy(desc(migrationRollouts.updatedAt)).limit(1))[0];
-      await insertOnce(investigationCases, `${tenantId}_case_pilot_001`, {
+      await insertOnce(investigationCases, caseId, {
         tenantId,
         decisionId: "dec_pilot_001",
         rolloutId: existingRollout?.id ?? null,
@@ -142,6 +185,14 @@ export async function ensurePilotArtifacts(userId: number, tenantId: string) {
         resolvedByUserId: null,
       });
     }
+    await insertOnce(investigationActivities, `${caseId}_activity_created`, {
+      tenantId,
+      caseId,
+      activityKind: "case_created",
+      summary: "Pilot investigation case opened from retained replay divergence evidence.",
+      detailJson: JSON.stringify({ decisionId: "dec_pilot_001", source: "pilot_artifact_backfill", pilotOnly: true }),
+      actorUserId: userId,
+    });
     await ensurePilotRetentionPolicy(tenantId, userId);
     return;
   }
@@ -232,6 +283,14 @@ export async function ensurePilotArtifacts(userId: number, tenantId: string) {
     outcomeRationale: null,
     createdByUserId: userId,
     resolvedByUserId: null,
+  });
+  await insertOnce(investigationActivities, `${tenantId}_case_pilot_001_activity_created`, {
+    tenantId,
+    caseId: `${tenantId}_case_pilot_001`,
+    activityKind: "case_created",
+    summary: "Pilot investigation case opened from retained replay divergence evidence.",
+    detailJson: JSON.stringify({ decisionId: "dec_pilot_001", source: "pilot_artifact_seed", pilotOnly: true }),
+    actorUserId: userId,
   });
   await ensurePilotRetentionPolicy(tenantId, userId);
 
@@ -461,7 +520,7 @@ export async function investigationCaseDetail(userId: number, tenantId: string, 
   else if (input.rolloutId) baseConditions.push(eq(investigationCases.rolloutId, input.rolloutId));
   const investigationCase = (await db.select().from(investigationCases).where(and(...baseConditions)).orderBy(desc(investigationCases.updatedAt)).limit(1))[0];
   if (!investigationCase) throw new Error("No tenant-scoped investigation case was found for the requested context.");
-  const [evidence, traces, records, rollout, actions, assignments, escalations, manifests, retentionPolicies] = await Promise.all([
+  const [evidence, traces, records, rollout, actions, assignments, escalations, manifests, retentionPolicies, comments, attachments, activities] = await Promise.all([
     db.select().from(decisionEvidence).where(and(eq(decisionEvidence.tenantId, tenantId), eq(decisionEvidence.decisionId, investigationCase.decisionId))).orderBy(desc(decisionEvidence.createdAt)).limit(20),
     db.select().from(replayTraces).where(and(eq(replayTraces.tenantId, tenantId), eq(replayTraces.decisionId, investigationCase.decisionId))).orderBy(desc(replayTraces.createdAt)).limit(30),
     db.select().from(investigationRecords).where(eq(investigationRecords.tenantId, tenantId)).orderBy(desc(investigationRecords.createdAt)).limit(100),
@@ -471,6 +530,9 @@ export async function investigationCaseDetail(userId: number, tenantId: string, 
     db.select().from(investigationEscalations).where(and(eq(investigationEscalations.tenantId, tenantId), eq(investigationEscalations.caseId, investigationCase.id))).orderBy(desc(investigationEscalations.updatedAt)).limit(30),
     db.select().from(evidencePackageManifests).where(and(eq(evidencePackageManifests.tenantId, tenantId), eq(evidencePackageManifests.caseId, investigationCase.id))).orderBy(desc(evidencePackageManifests.createdAt)).limit(30),
     db.select().from(evidenceRetentionPolicies).where(and(eq(evidenceRetentionPolicies.tenantId, tenantId), eq(evidenceRetentionPolicies.status, "active"))).orderBy(desc(evidenceRetentionPolicies.updatedAt)).limit(5),
+    db.select().from(investigationComments).where(and(eq(investigationComments.tenantId, tenantId), eq(investigationComments.caseId, investigationCase.id))).orderBy(desc(investigationComments.createdAt)).limit(100),
+    db.select().from(investigationAttachments).where(and(eq(investigationAttachments.tenantId, tenantId), eq(investigationAttachments.caseId, investigationCase.id))).orderBy(desc(investigationAttachments.createdAt)).limit(100),
+    db.select().from(investigationActivities).where(and(eq(investigationActivities.tenantId, tenantId), eq(investigationActivities.caseId, investigationCase.id))).orderBy(desc(investigationActivities.createdAt)).limit(200),
   ]);
   return {
     investigationCase,
@@ -479,8 +541,11 @@ export async function investigationCaseDetail(userId: number, tenantId: string, 
     records: records.filter(record => record.decisionId === investigationCase.decisionId || (investigationCase.rolloutId !== null && record.rolloutId === investigationCase.rolloutId)).map(record => ({ ...record, details: safelyParse(record.detailJson) })),
     rollout: rollout[0] ?? null,
     relatedToolCalls: actions.filter(action => action.inputJson.includes(investigationCase.decisionId)),
-    assignments,
-    escalations,
+    assignments: assignments.map(assignment => ({ ...assignment, serviceLevel: serviceLevelPosture(assignment.serviceLevelTargetAt) })),
+    escalations: escalations.map(escalation => ({ ...escalation, serviceLevel: serviceLevelPosture(escalation.serviceLevelTargetAt) })),
+    comments,
+    attachments,
+    activities: activities.map(activity => ({ ...activity, details: safelyParse(activity.detailJson) })),
     manifests: manifests.map(manifest => ({ ...manifest, parsedManifest: safelyParse(manifest.manifestJson) })),
     retentionPolicy: retentionPolicies[0] ?? null,
     pilotOnly: true,
@@ -505,42 +570,86 @@ export async function updateInvestigationOutcome(userId: number, tenantId: strin
     detailJson: JSON.stringify({ caseId: input.caseId, outcome: input.status, rationale: input.rationale, authorityBoundary, actorUserId: userId, pilotOnly: true }),
     createdByUserId: userId,
   });
+  await recordInvestigationActivity(db, {
+    tenantId,
+    caseId: input.caseId,
+    activityKind: "outcome_recorded",
+    summary: `Investigation outcome recorded: ${input.status.replace(/_/g, " ")}.`,
+    detail: { outcome: input.status, rationale: input.rationale, authorityBoundary },
+    actorUserId: userId,
+  });
   return { ok: true as const, caseId: input.caseId, status: input.status, pilotOnly: true };
 }
 
-export async function investigationCaseQueue(userId: number, tenantId: string) {
+export async function investigationCaseQueue(userId: number, tenantId: string, input: InvestigationQueueInput = {}) {
   await ensurePilotArtifacts(userId, tenantId);
   await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
   const db = await dbOrThrow();
-  const [cases, assignments, escalations] = await Promise.all([
+  const [cases, assignments, escalations, comments, savedViews] = await Promise.all([
     db.select().from(investigationCases).where(eq(investigationCases.tenantId, tenantId)).orderBy(desc(investigationCases.updatedAt)).limit(100),
     db.select().from(investigationCaseAssignments).where(eq(investigationCaseAssignments.tenantId, tenantId)).orderBy(desc(investigationCaseAssignments.updatedAt)).limit(200),
     db.select().from(investigationEscalations).where(eq(investigationEscalations.tenantId, tenantId)).orderBy(desc(investigationEscalations.updatedAt)).limit(200),
+    db.select().from(investigationComments).where(eq(investigationComments.tenantId, tenantId)).orderBy(desc(investigationComments.createdAt)).limit(300),
+    db.select().from(investigationSavedViews).where(and(eq(investigationSavedViews.tenantId, tenantId), eq(investigationSavedViews.ownerUserId, userId))).orderBy(desc(investigationSavedViews.updatedAt)).limit(30),
   ]);
   const latestAssignment = new Map<string, typeof assignments[number]>();
   assignments.forEach(assignment => { if (!latestAssignment.has(assignment.caseId)) latestAssignment.set(assignment.caseId, assignment); });
   const activeEscalations = new Map<string, typeof escalations[number][]>();
   escalations.filter(escalation => escalation.status === "queued" || escalation.status === "acknowledged").forEach(escalation => activeEscalations.set(escalation.caseId, [...(activeEscalations.get(escalation.caseId) ?? []), escalation]));
-  return {
-    cases: cases.map(investigationCase => ({
+  const commentsByCase = new Map<string, string[]>();
+  comments.forEach(comment => commentsByCase.set(comment.caseId, [...(commentsByCase.get(comment.caseId) ?? []), comment.body]));
+  const rows = cases.map(investigationCase => {
+    const assignment = latestAssignment.get(investigationCase.id) ?? null;
+    const active = activeEscalations.get(investigationCase.id) ?? [];
+    const targets = [assignment?.serviceLevelTargetAt, ...active.map(escalation => escalation.serviceLevelTargetAt)].filter((target): target is Date => Boolean(target));
+    const serviceLevelTargetAt = targets.sort((left, right) => left.getTime() - right.getTime())[0] ?? null;
+    return {
       ...investigationCase,
-      latestAssignment: latestAssignment.get(investigationCase.id) ?? null,
-      activeEscalations: activeEscalations.get(investigationCase.id) ?? [],
-    })),
-    assignments,
-    escalations,
+      latestAssignment: assignment ? { ...assignment, serviceLevel: serviceLevelPosture(assignment.serviceLevelTargetAt) } : null,
+      activeEscalations: active.map(escalation => ({ ...escalation, serviceLevel: serviceLevelPosture(escalation.serviceLevelTargetAt) })),
+      serviceLevel: serviceLevelPosture(serviceLevelTargetAt),
+      searchText: [investigationCase.id, investigationCase.decisionId, investigationCase.summary, investigationCase.recommendedAction, investigationCase.status, assignment?.assignedRole, ...commentsByCase.get(investigationCase.id) ?? []].filter(Boolean).join(" ").toLowerCase(),
+    };
+  });
+  const sorted = filterAndSortLifecycleQueue(rows, input);
+  const workload = Array.from(latestAssignment.values()).reduce<Record<string, { key: string; assignedRole: string; assignedToUserId: number | null; openCases: number; overdueCases: number }>>((accumulator, assignment) => {
+    const key = assignment.assignedToUserId ? `user:${assignment.assignedToUserId}` : `role:${assignment.assignedRole}`;
+    const assignedCase = rows.find(row => row.id === assignment.caseId);
+    if (!accumulator[key]) accumulator[key] = { key, assignedRole: assignment.assignedRole, assignedToUserId: assignment.assignedToUserId, openCases: 0, overdueCases: 0 };
+    if (assignedCase && assignedCase.status === "open") accumulator[key].openCases += 1;
+    if (assignedCase?.serviceLevel.state === "overdue") accumulator[key].overdueCases += 1;
+    return accumulator;
+  }, {});
+  return {
+    cases: sorted.map(({ searchText, ...caseRow }) => caseRow),
+    assignments: assignments.map(assignment => ({ ...assignment, serviceLevel: serviceLevelPosture(assignment.serviceLevelTargetAt) })),
+    escalations: escalations.map(escalation => ({ ...escalation, serviceLevel: serviceLevelPosture(escalation.serviceLevelTargetAt) })),
+    savedViews: savedViews.map(view => ({ ...view, filters: safelyParse(view.filterJson) })),
+    workload: Object.values(workload),
+    appliedFilters: input,
     pilotOnly: true,
   };
 }
 
-export async function assignInvestigationCase(userId: number, tenantId: string, input: { caseId: string; assignedRole: "platform_operator" | "compliance_operator" | "customer_operator"; rationale: string }) {
+export async function investigationCaseAssignees(userId: number, tenantId: string) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
+  const db = await dbOrThrow();
+  return db.select({ userId: tenantMembers.userId, role: tenantMembers.role, name: users.name, email: users.email }).from(tenantMembers).leftJoin(users, eq(users.id, tenantMembers.userId)).where(eq(tenantMembers.tenantId, tenantId)).orderBy(tenantMembers.role);
+}
+
+export async function assignInvestigationCase(userId: number, tenantId: string, input: { caseId: string; assignedRole: InvestigatorRole; assignedToUserId?: number; rationale: string; dueAt?: Date; serviceLevelTargetMinutes?: number }) {
   await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
   const db = await dbOrThrow();
   const investigationCase = (await db.select().from(investigationCases).where(and(eq(investigationCases.id, input.caseId), eq(investigationCases.tenantId, tenantId))).limit(1))[0];
   if (!investigationCase) throw new Error("The investigation case is not available in this tenant scope.");
+  if (input.assignedToUserId) {
+    const assignee = (await db.select().from(tenantMembers).where(and(eq(tenantMembers.tenantId, tenantId), eq(tenantMembers.userId, input.assignedToUserId))).limit(1))[0];
+    if (!assignee || assignee.role !== input.assignedRole) throw new Error("The named assignee must be a member of this tenant and belong to the selected operator role.");
+  }
   const prior = (await db.select({ id: investigationCaseAssignments.id }).from(investigationCaseAssignments).where(and(eq(investigationCaseAssignments.tenantId, tenantId), eq(investigationCaseAssignments.caseId, input.caseId))).orderBy(desc(investigationCaseAssignments.updatedAt)).limit(1))[0];
   const id = `assign_${nanoid(16)}`;
-  await db.insert(investigationCaseAssignments).values({ id, tenantId, caseId: input.caseId, assignedRole: input.assignedRole, assignedToUserId: null, assignedByUserId: userId, status: prior ? "reassigned" : "assigned", rationale: input.rationale });
+  const serviceLevelTargetAt = serviceLevelTarget(input.serviceLevelTargetMinutes);
+  await db.insert(investigationCaseAssignments).values({ id, tenantId, caseId: input.caseId, assignedRole: input.assignedRole, assignedToUserId: input.assignedToUserId ?? null, assignedByUserId: userId, status: prior ? "reassigned" : "assigned", rationale: input.rationale, dueAt: input.dueAt ?? null, serviceLevelTargetMinutes: input.serviceLevelTargetMinutes ?? null, serviceLevelTargetAt });
   await db.insert(investigationRecords).values({
     id: `inv_${nanoid(16)}`,
     tenantId,
@@ -549,20 +658,23 @@ export async function assignInvestigationCase(userId: number, tenantId: string, 
     recordKind: "replay_assertion",
     status: "acknowledged",
     summary: `Case assigned to the ${input.assignedRole.replace(/_/g, " ")} work queue.`,
-    detailJson: JSON.stringify({ action: "case_assignment", caseId: input.caseId, assignedRole: input.assignedRole, rationale: input.rationale, assignedByUserId: userId, pilotOnly: true }),
+    detailJson: JSON.stringify({ action: "case_assignment", caseId: input.caseId, assignedRole: input.assignedRole, assignedToUserId: input.assignedToUserId ?? null, dueAt: input.dueAt?.toISOString() ?? null, serviceLevelTargetMinutes: input.serviceLevelTargetMinutes ?? null, rationale: input.rationale, assignedByUserId: userId, pilotOnly: true }),
     createdByUserId: userId,
   });
-  return { id, caseId: input.caseId, assignedRole: input.assignedRole, pilotOnly: true };
+  await recordInvestigationActivity(db, { tenantId, caseId: input.caseId, actorUserId: userId, ...assignmentActivity({ assignmentId: id, assignedRole: input.assignedRole, assignedToUserId: input.assignedToUserId ?? null, dueAt: input.dueAt ?? null, serviceLevelTargetAt, rationale: input.rationale }) });
+  return { id, caseId: input.caseId, assignedRole: input.assignedRole, assignedToUserId: input.assignedToUserId ?? null, dueAt: input.dueAt ?? null, serviceLevelTargetAt, serviceLevel: serviceLevelPosture(serviceLevelTargetAt), pilotOnly: true, automaticTimer: false };
 }
 
-export async function escalateInvestigationCase(userId: number, tenantId: string, input: { caseId: string; queue: "compliance_review" | "platform_safety" | "customer_exception"; priority: "standard" | "elevated" | "critical"; reason: string }) {
+export async function escalateInvestigationCase(userId: number, tenantId: string, input: { caseId: string; queue: "compliance_review" | "platform_safety" | "customer_exception"; priority: "standard" | "elevated" | "critical"; reason: string; serviceLevelTargetMinutes?: number }) {
   await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
   if (input.queue === "platform_safety") await assertTenantRole(userId, tenantId, ["platform_operator"]);
   const db = await dbOrThrow();
   const investigationCase = (await db.select().from(investigationCases).where(and(eq(investigationCases.id, input.caseId), eq(investigationCases.tenantId, tenantId))).limit(1))[0];
   if (!investigationCase) throw new Error("The investigation case is not available in this tenant scope.");
   const id = `esc_${nanoid(16)}`;
-  await db.insert(investigationEscalations).values({ id, tenantId, caseId: input.caseId, queue: input.queue, priority: input.priority, status: "queued", reason: input.reason, createdByUserId: userId, acknowledgedByUserId: null });
+  const serviceLevelTargetMinutes = input.serviceLevelTargetMinutes ?? defaultEscalationTargetMinutes(input.priority);
+  const serviceLevelTargetAt = serviceLevelTarget(serviceLevelTargetMinutes);
+  await db.insert(investigationEscalations).values({ id, tenantId, caseId: input.caseId, queue: input.queue, priority: input.priority, status: "queued", reason: input.reason, serviceLevelTargetMinutes, serviceLevelTargetAt, createdByUserId: userId, acknowledgedByUserId: null });
   await db.insert(investigationRecords).values({
     id: `inv_${nanoid(16)}`,
     tenantId,
@@ -571,10 +683,11 @@ export async function escalateInvestigationCase(userId: number, tenantId: string
     recordKind: "rollback_recommendation",
     status: "recommended",
     summary: `Case escalated to the ${input.queue.replace(/_/g, " ")} queue at ${input.priority} priority.`,
-    detailJson: JSON.stringify({ action: "case_escalation", caseId: input.caseId, queue: input.queue, priority: input.priority, reason: input.reason, createdByUserId: userId, pilotOnly: true, automaticDispatch: false }),
+    detailJson: JSON.stringify({ action: "case_escalation", caseId: input.caseId, queue: input.queue, priority: input.priority, serviceLevelTargetMinutes, serviceLevelTargetAt: serviceLevelTargetAt?.toISOString() ?? null, reason: input.reason, createdByUserId: userId, pilotOnly: true, automaticDispatch: false }),
     createdByUserId: userId,
   });
-  return { id, caseId: input.caseId, queue: input.queue, priority: input.priority, pilotOnly: true, automaticDispatch: false };
+  await recordInvestigationActivity(db, { tenantId, caseId: input.caseId, actorUserId: userId, ...escalationActivity({ escalationId: id, queue: input.queue, priority: input.priority, reason: input.reason, serviceLevelTargetMinutes, serviceLevelTargetAt }) });
+  return { id, caseId: input.caseId, queue: input.queue, priority: input.priority, serviceLevelTargetAt, serviceLevel: serviceLevelPosture(serviceLevelTargetAt), pilotOnly: true, automaticDispatch: false, automaticTimer: false };
 }
 
 export async function acknowledgeInvestigationEscalation(userId: number, tenantId: string, escalationId: string) {
@@ -585,7 +698,51 @@ export async function acknowledgeInvestigationEscalation(userId: number, tenantI
   await assertTenantRole(userId, tenantId, requiredRoles as ("platform_operator" | "compliance_operator" | "customer_operator")[]);
   if (escalation.status !== "queued") throw new Error("Only a queued escalation can be acknowledged.");
   await db.update(investigationEscalations).set({ status: "acknowledged", acknowledgedByUserId: userId }).where(and(eq(investigationEscalations.id, escalationId), eq(investigationEscalations.tenantId, tenantId)));
+  await recordInvestigationActivity(db, { tenantId, caseId: escalation.caseId, activityKind: "escalation_acknowledged", summary: "Escalation acknowledgement recorded.", detail: { escalationId, queue: escalation.queue, priority: escalation.priority }, actorUserId: userId });
   return { ok: true as const, escalationId, pilotOnly: true, automaticDispatch: false };
+}
+
+export async function saveInvestigationView(userId: number, tenantId: string, input: { name: string; filters: InvestigationQueueInput }) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
+  const db = await dbOrThrow();
+  const id = `view_${nanoid(16)}`;
+  await db.insert(investigationSavedViews).values({ id, tenantId, ownerUserId: userId, name: input.name, filterJson: JSON.stringify(input.filters) });
+  return { id, name: input.name, filters: input.filters, pilotOnly: true };
+}
+
+export async function deleteInvestigationSavedView(userId: number, tenantId: string, viewId: string) {
+  const db = await dbOrThrow();
+  const view = (await db.select().from(investigationSavedViews).where(and(eq(investigationSavedViews.id, viewId), eq(investigationSavedViews.tenantId, tenantId), eq(investigationSavedViews.ownerUserId, userId))).limit(1))[0];
+  if (!view) throw new Error("The saved investigation view is not available to this tenant user.");
+  await db.delete(investigationSavedViews).where(and(eq(investigationSavedViews.id, viewId), eq(investigationSavedViews.tenantId, tenantId), eq(investigationSavedViews.ownerUserId, userId)));
+  return { ok: true as const, viewId, pilotOnly: true };
+}
+
+export async function addInvestigationComment(userId: number, tenantId: string, input: { caseId: string; body: string }) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer"]);
+  const db = await dbOrThrow();
+  const investigationCase = (await db.select().from(investigationCases).where(and(eq(investigationCases.id, input.caseId), eq(investigationCases.tenantId, tenantId))).limit(1))[0];
+  if (!investigationCase) throw new Error("The investigation case is not available in this tenant scope.");
+  const id = `comment_${nanoid(16)}`;
+  await db.insert(investigationComments).values({ id, tenantId, caseId: input.caseId, body: input.body, createdByUserId: userId });
+  await recordInvestigationActivity(db, { tenantId, caseId: input.caseId, actorUserId: userId, ...commentActivity({ commentId: id, body: input.body }) });
+  return { id, caseId: input.caseId, pilotOnly: true };
+}
+
+export async function addInvestigationAttachment(userId: number, tenantId: string, input: { caseId: string; fileName: string; contentType: string; contentBase64: string; summary?: string }) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator"]);
+  const db = await dbOrThrow();
+  const investigationCase = (await db.select().from(investigationCases).where(and(eq(investigationCases.id, input.caseId), eq(investigationCases.tenantId, tenantId))).limit(1))[0];
+  if (!investigationCase) throw new Error("The investigation case is not available in this tenant scope.");
+  const content = Buffer.from(input.contentBase64, "base64");
+  const admission = admitPilotAttachment(input.fileName, content.byteLength);
+  if (!admission.ok) throw new Error(admission.reason);
+  const safeName = admission.safeName;
+  const stored = await storagePut(`tenants/${tenantId}/investigations/${input.caseId}/${safeName}`, content, input.contentType);
+  const id = `attachment_${nanoid(16)}`;
+  await db.insert(investigationAttachments).values({ id, tenantId, caseId: input.caseId, fileName: safeName, contentType: input.contentType, sizeBytes: content.byteLength, storageKey: stored.key, storageUrl: stored.url, summary: input.summary ?? null, uploadedByUserId: userId });
+  await recordInvestigationActivity(db, { tenantId, caseId: input.caseId, actorUserId: userId, ...attachmentActivity({ attachmentId: id, fileName: safeName, contentType: input.contentType, sizeBytes: content.byteLength, summary: input.summary ?? null }) });
+  return { id, caseId: input.caseId, fileName: safeName, contentType: input.contentType, sizeBytes: content.byteLength, storageUrl: stored.url, pilotOnly: true, lifecycleBoundary: "Attachment bytes are stored in the project object store with tenant-scoped metadata. This pilot does not provide malware scanning, automatic deletion, or legal-hold enforcement." };
 }
 
 export async function exportReplayInvestigation(userId: number, tenantId: string, input: { decisionId: string; baselineTraceId?: string; candidateTraceId?: string }) {
