@@ -90,3 +90,15 @@
 - [x] Reframe the remaining platform roadmap into Governed Decision Operations, Authoring, Knowledge Graph, Workflow Platform, Industry Packs, AI Governance, Decision Intelligence, and Ecosystem milestones.
 - [x] Diagnose and fix the Control Room ResizeObserver loop warning without changing tenant-scoped dashboard behavior.
 - [x] Validate and checkpoint the ResizeObserver warning fix.
+- [x] Define the Governed Decision Authoring contracts, pilot boundaries, dynamic-programming simulation approach, and provenance-only graph vocabulary.
+- [x] Implement a tenant-scoped Policy Studio revision registry with immutable revision identity and maker/checker review state transitions.
+- [x] Add replay-backed retained-cohort simulation reports that predict policy revision impact without changing live policy or rollout state.
+- [x] Build a tenant-scoped provenance-only Evidence Graph read model connecting decisions, policy revisions, replay, investigations, outcomes, and audit evidence.
+- [x] Add detailed contextual intent, use, workflow, and expected-outcome guidance across the Policy Studio, simulation, graph, and existing operator workspaces.
+- [x] Add an automated sidebar-resize end-to-end smoke check and a discoverable drag-handle hover/tooltip treatment.
+- [x] Split large client bundles with explicit Vite chunking and verify the build advisory is addressed without breaking route behavior.
+- [x] Validate, document, and checkpoint the Governed Decision Authoring release.
+- [x] Document an AI Governance Control Plane discovery path for a future AI Activity Ledger, budget policy, routing, caching, replay, approval, and cost-analytics domain without implementing LLM execution or provider-side controls in the current pilot.
+- [x] Run the sidebar-resize smoke check through an authenticated automation path and record a passing drag result.
+- [x] Save the Governed Decision Authoring release checkpoint after the authenticated resize-smoke result is recorded.
+- [x] Save the final checkpoint for the Policy Studio, simulation, Evidence Graph, guidance, and bundle-splitting release.

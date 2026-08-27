@@ -47,6 +47,24 @@ export const controlPlaneRouter = router({
   tenantSlaReminderWorkload: protectedProcedure
     .input(tenantInput)
     .query(({ ctx, input }) => expansion.tenantSlaReminderWorkload(ctx.user.id, input.tenantId)),
+  policyStudio: protectedProcedure
+    .input(tenantInput)
+    .query(({ ctx, input }) => expansion.policyStudio(ctx.user.id, input.tenantId)),
+  createPolicyRevision: protectedProcedure
+    .input(tenantInput.extend({ policyKey: z.string().min(3).max(120), name: z.string().min(3).max(160), description: z.string().min(12).max(4_000), domainAdapter: z.string().min(3).max(120), semanticVersion: z.string().min(3).max(64), summary: z.string().min(12).max(4_000), sourceJson: z.string().min(2).max(20_000) }))
+    .mutation(({ ctx, input }) => expansion.createPolicyRevision(ctx.user.id, input.tenantId, input)),
+  submitPolicyRevisionForReview: protectedProcedure
+    .input(tenantInput.extend({ revisionId: z.string().min(3).max(64) }))
+    .mutation(({ ctx, input }) => expansion.submitPolicyRevisionForReview(ctx.user.id, input.tenantId, input.revisionId)),
+  recordPolicyRevisionReview: protectedProcedure
+    .input(tenantInput.extend({ revisionId: z.string().min(3).max(64), decision: z.enum(["approved", "changes_requested", "rejected"]), rationale: z.string().min(12).max(4_000) }))
+    .mutation(({ ctx, input }) => expansion.recordPolicyRevisionReview(ctx.user.id, input.tenantId, input)),
+  simulatePolicyRevision: protectedProcedure
+    .input(tenantInput.extend({ revisionId: z.string().min(3).max(64) }))
+    .mutation(({ ctx, input }) => expansion.simulatePolicyRevision(ctx.user.id, input.tenantId, input.revisionId)),
+  evidenceGraph: protectedProcedure
+    .input(tenantInput.extend({ decisionId: z.string().min(3).max(96).optional() }))
+    .query(({ ctx, input }) => expansion.evidenceGraph(ctx.user.id, input.tenantId, input.decisionId)),
   investigationCaseAssignees: protectedProcedure
     .input(tenantInput)
     .query(({ ctx, input }) => expansion.investigationCaseAssignees(ctx.user.id, input.tenantId)),

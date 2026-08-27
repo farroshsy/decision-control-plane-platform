@@ -2,22 +2,26 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
+import { lazy, Suspense } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
-import Landing from "./pages/Landing";
-import DocsPortal from "./pages/DocsPortal";
-import PlatformOverview from "./pages/PlatformOverview";
-import StateEvolution from "./pages/StateEvolution";
-import Rollouts from "./pages/Rollouts";
-import Operations from "./pages/Operations";
-import Evidence from "./pages/Evidence";
-import MigrationTimeline from "./pages/MigrationTimeline";
-import ReplayExplorer from "./pages/ReplayExplorer";
-import VersionLab from "./pages/VersionLab";
-import Integrations from "./pages/Integrations";
-import InvestigationCase from "./pages/InvestigationCase";
-import GettingStarted from "./pages/GettingStarted";
+
+const Landing = lazy(() => import("./pages/Landing"));
+const DocsPortal = lazy(() => import("./pages/DocsPortal"));
+const PlatformOverview = lazy(() => import("./pages/PlatformOverview"));
+const StateEvolution = lazy(() => import("./pages/StateEvolution"));
+const Rollouts = lazy(() => import("./pages/Rollouts"));
+const Operations = lazy(() => import("./pages/Operations"));
+const Evidence = lazy(() => import("./pages/Evidence"));
+const MigrationTimeline = lazy(() => import("./pages/MigrationTimeline"));
+const ReplayExplorer = lazy(() => import("./pages/ReplayExplorer"));
+const VersionLab = lazy(() => import("./pages/VersionLab"));
+const Integrations = lazy(() => import("./pages/Integrations"));
+const InvestigationCase = lazy(() => import("./pages/InvestigationCase"));
+const GettingStarted = lazy(() => import("./pages/GettingStarted"));
+const PolicyStudio = lazy(() => import("./pages/PolicyStudio"));
+const EvidenceGraph = lazy(() => import("./pages/EvidenceGraph"));
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -26,6 +30,8 @@ function Router() {
       <Route path={"/"} component={Landing} />
       <Route path={"/app/docs"}><DashboardLayout><DocsPortal /></DashboardLayout></Route>
       <Route path={"/app/getting-started"}><DashboardLayout><GettingStarted /></DashboardLayout></Route>
+      <Route path={"/app/policy-studio"}><DashboardLayout><PolicyStudio /></DashboardLayout></Route>
+      <Route path={"/app/evidence-graph"}><DashboardLayout><EvidenceGraph /></DashboardLayout></Route>
       <Route path={"/app"}><DashboardLayout><PlatformOverview /></DashboardLayout></Route>
       <Route path={"/app/state"}><DashboardLayout><StateEvolution /></DashboardLayout></Route>
       <Route path={"/app/rollouts"}><DashboardLayout><Rollouts /></DashboardLayout></Route>
@@ -57,7 +63,7 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <Suspense fallback={<div className="min-h-screen bg-background" aria-label="Loading workspace" />}><Router /></Suspense>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

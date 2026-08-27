@@ -164,6 +164,126 @@ export const replayTraces = mysqlTable(
   table => [index("replay_traces_tenant_idx").on(table.tenantId, table.decisionId, table.createdAt)]
 );
 
+export const policyDefinitions = mysqlTable(
+  "policyDefinitions",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    policyKey: varchar("policyKey", { length: 120 }).notNull(),
+    name: varchar("name", { length: 160 }).notNull(),
+    description: text("description").notNull(),
+    domainAdapter: varchar("domainAdapter", { length: 120 }).notNull(),
+    createdByUserId: int("createdByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    uniqueIndex("policy_definitions_tenant_key_idx").on(table.tenantId, table.policyKey),
+    index("policy_definitions_tenant_idx").on(table.tenantId, table.updatedAt),
+  ]
+);
+
+export const policyRevisions = mysqlTable(
+  "policyRevisions",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    policyId: varchar("policyId", { length: 64 }).notNull(),
+    parentRevisionId: varchar("parentRevisionId", { length: 64 }),
+    revisionNumber: int("revisionNumber").notNull(),
+    semanticVersion: varchar("semanticVersion", { length: 64 }).notNull(),
+    summary: text("summary").notNull(),
+    sourceJson: text("sourceJson").notNull(),
+    sourceHash: varchar("sourceHash", { length: 128 }).notNull(),
+    lifecycleState: mysqlEnum("lifecycleState", ["draft", "in_review", "approved", "published", "deprecated", "archived"]).default("draft").notNull(),
+    simulationState: mysqlEnum("simulationState", ["not_run", "completed", "infeasible"]).default("not_run").notNull(),
+    createdByUserId: int("createdByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    uniqueIndex("policy_revisions_policy_number_idx").on(table.tenantId, table.policyId, table.revisionNumber),
+    index("policy_revisions_tenant_state_idx").on(table.tenantId, table.lifecycleState, table.updatedAt),
+    index("policy_revisions_policy_idx").on(table.tenantId, table.policyId, table.updatedAt),
+  ]
+);
+
+export const policyRevisionReviews = mysqlTable(
+  "policyRevisionReviews",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    policyRevisionId: varchar("policyRevisionId", { length: 64 }).notNull(),
+    reviewerUserId: int("reviewerUserId").notNull(),
+    decision: mysqlEnum("decision", ["approved", "changes_requested", "rejected"]).notNull(),
+    rationale: text("rationale").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("policy_revision_reviews_revision_idx").on(table.tenantId, table.policyRevisionId, table.createdAt),
+  ]
+);
+
+export const policyRevisionActivities = mysqlTable(
+  "policyRevisionActivities",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    policyId: varchar("policyId", { length: 64 }).notNull(),
+    policyRevisionId: varchar("policyRevisionId", { length: 64 }).notNull(),
+    activityKind: mysqlEnum("activityKind", ["revision_created", "review_requested", "review_recorded", "revision_approved", "simulation_recorded"]).notNull(),
+    summary: varchar("summary", { length: 280 }).notNull(),
+    detailJson: text("detailJson").notNull(),
+    actorUserId: int("actorUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("policy_revision_activities_revision_idx").on(table.tenantId, table.policyRevisionId, table.createdAt),
+    index("policy_revision_activities_tenant_idx").on(table.tenantId, table.createdAt),
+  ]
+);
+
+export const policySimulationReports = mysqlTable(
+  "policySimulationReports",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    policyRevisionId: varchar("policyRevisionId", { length: 64 }).notNull(),
+    cohortLabel: varchar("cohortLabel", { length: 160 }).notNull(),
+    cohortDefinitionJson: text("cohortDefinitionJson").notNull(),
+    basePolicyVersion: varchar("basePolicyVersion", { length: 64 }).notNull(),
+    resultState: mysqlEnum("resultState", ["completed", "infeasible"]).notNull(),
+    objectiveJson: text("objectiveJson").notNull(),
+    feasibilityJson: text("feasibilityJson").notNull(),
+    resultsJson: text("resultsJson").notNull(),
+    createdByUserId: int("createdByUserId").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("policy_simulation_reports_revision_idx").on(table.tenantId, table.policyRevisionId, table.createdAt),
+  ]
+);
+
+export const evidenceGraphEdges = mysqlTable(
+  "evidenceGraphEdges",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    tenantId: varchar("tenantId", { length: 64 }).notNull(),
+    sourceType: mysqlEnum("sourceType", ["decision", "evidence", "policy_revision", "replay_trace", "investigation_case", "outcome", "audit_activity", "simulation_report"]).notNull(),
+    sourceId: varchar("sourceId", { length: 96 }).notNull(),
+    edgeType: mysqlEnum("edgeType", ["used_evidence", "evaluated_by_policy", "evaluated_against_state", "replayed_as", "opened_investigation", "resolved_by_outcome", "recorded_in_audit", "simulated_by"]).notNull(),
+    targetType: mysqlEnum("targetType", ["decision", "evidence", "policy_revision", "replay_trace", "investigation_case", "outcome", "audit_activity", "simulation_report"]).notNull(),
+    targetId: varchar("targetId", { length: 96 }).notNull(),
+    provenanceJson: text("provenanceJson").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    uniqueIndex("evidence_graph_edge_unique_idx").on(table.tenantId, table.sourceType, table.sourceId, table.edgeType, table.targetType, table.targetId),
+    index("evidence_graph_source_idx").on(table.tenantId, table.sourceType, table.sourceId),
+    index("evidence_graph_target_idx").on(table.tenantId, table.targetType, table.targetId),
+  ]
+);
+
 export const investigationRecords = mysqlTable(
   "investigationRecords",
   {
