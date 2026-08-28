@@ -1337,7 +1337,7 @@ async function ensurePolicyStudioPilotArtifacts(userId: number, tenantId: string
     simulationState: "not_run",
     createdByUserId: userId,
   });
-  await insertOnce(policyRevisionActivities, `${baselineRevisionId}_activity_created`, {
+  await insertOnce(policyRevisionActivities, `policy_seed_baseline_${tenantId}`, {
     tenantId,
     policyId,
     policyRevisionId: baselineRevisionId,
@@ -1346,7 +1346,7 @@ async function ensurePolicyStudioPilotArtifacts(userId: number, tenantId: string
     detailJson: JSON.stringify({ sourceHash: commentContentHash(baselineSource), seeded: true, pilotOnly: true }),
     actorUserId: userId,
   });
-  await insertOnce(policyRevisionActivities, `${candidateRevisionId}_activity_created`, {
+  await insertOnce(policyRevisionActivities, `policy_seed_candidate_${tenantId}`, {
     tenantId,
     policyId,
     policyRevisionId: candidateRevisionId,

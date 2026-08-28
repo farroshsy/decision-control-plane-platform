@@ -1,8 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
 
 test.skip(!process.env.E2E_STORAGE_STATE, "An authenticated storage state is required to reach the tenant-scoped Control Room.");
 
-test("sidebar resize smoke: drag persists width and produces no ResizeObserver loop", async ({ page }) => {
+test("sidebar resize smoke: drag persists width and produces no ResizeObserver loop", async ({ page, context }) => {
+  const storageState = JSON.parse(readFileSync(process.env.E2E_STORAGE_STATE!, "utf8"));
+  const sessionCookie = storageState.cookies.find((cookie: { name: string }) => cookie.name === "app_session_id");
+  if (!sessionCookie) throw new Error("The local authenticated test state did not contain app_session_id.");
+  await context.addCookies([{ name: "app_session_id", value: sessionCookie.value, url: process.env.E2E_BASE_URL ?? "http://127.0.0.1:3000", httpOnly: true, secure: false, sameSite: "Lax" }]);
   const observerWarnings: string[] = [];
   page.on("pageerror", error => {
     if (error.message.includes("ResizeObserver loop")) observerWarnings.push(error.message);

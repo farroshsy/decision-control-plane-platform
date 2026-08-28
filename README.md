@@ -25,7 +25,9 @@ The application is a React, TypeScript, Express, tRPC, Drizzle, and MySQL/TiDB p
 | **Investigation workflow**     | BPMN/DMN/CMMN-aware case workspace, accountable outcomes, advanced queue search/filter/sort, private saved views, named or role-based assignment, due/SLA targets, manual escalation, comments, attachment references, immutable activity evidence, and cross-workspace trace navigation. |
 | **Evidence-package integrity** | Canonical JSON hashing, server-held HMAC-SHA-256 manifest signatures, signature verification, tenant-scoped retention-policy records, and retained export references.                         |
 | **Integration foundation**     | Tenant-scoped pilot API keys, bounded JSON-RPC MCP endpoint, SDK/CLI examples, simulated webhook subscriptions/deliveries, searchable diagnostics, and controlled local retry audit.          |
-| **Operator experience**        | Responsive dashboard navigation, dark mode, compact tenant-scoped loading skeletons, contextual notifications, personal in-app reminder acknowledgement/dismissal with retained evidence, tenant-admin workload oversight, and readable safety status. |
+| **Governed decision authoring** | Tenant-scoped Policy Studio definitions and hash-bound revisions, maker/checker lifecycle enforcement, immutable authoring activities, and explicit draft/review/approval evidence. Live policy publication remains deferred. |
+| **Simulation and provenance** | Retained-cohort replay impact reports with hard feasibility gates, transparent constrained scoring, and a provenance-only Evidence Graph that connects decision, evidence, replay, policy version, investigation, outcome, simulation, and audit references. |
+| **Operator experience**        | Responsive dashboard navigation, dark mode, detailed intent/use/outcome work aids, contextual notifications, personal in-app reminder acknowledgement/dismissal with retained evidence, tenant-admin workload oversight, and readable safety status. |
 
 ## Control flow
 
@@ -52,6 +54,9 @@ The architecture deliberately separates **recording or recommending** an outcome
 | Route                 | Purpose                                                                                                                         |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `/app`                | Control-room overview of tenant safety posture, rollout progression, replay and migration signals.                              |
+| `/app/getting-started` | Five-minute intent, workflow, expected-outcome, and boundary guide across all operator workspaces. |
+| `/app/policy-studio`  | Hash-bound policy revision registry, maker/checker review submission, and retained-cohort impact simulation.                     |
+| `/app/evidence-graph` | Provenance-only network of retained decisions, evidence, policy versions, replay, cases, outcomes, simulations, and audit activity. |
 | `/app/state`          | State manifests, provenance, and state-evolution context.                                                                       |
 | `/app/rollouts`       | Tenant rollout governance and gate posture.                                                                                     |
 | `/app/operations`     | Operational telemetry and safety signals.                                                                                       |
@@ -91,11 +96,12 @@ The development server runs the Express/tRPC server, which serves the Vite appli
 
 ```bash
 pnpm test     # Vitest unit/regression suite
+pnpm test:e2e # Authenticated Playwright sidebar-resize smoke check (requires E2E_STORAGE_STATE)
 pnpm check    # TypeScript without emitting files
 pnpm build    # Vite client build + bundled server build
 ```
 
-The current Governed Decision Authoring foundation validation passed **42 tests across 12 Vitest files**, TypeScript checking, the production build, and approved browser/persistence review of the tenant-scoped reminder lifecycle. Vite may warn that the client bundle exceeds its default 500 kB chunk guidance; the warning is non-blocking and should be addressed with deliberate code-splitting work rather than suppressed.
+The current authoring release passed **45 Vitest tests across 14 files**, TypeScript checking, the production build, browser review of the approved Policy Studio seed revisions and Evidence Graph, and an authenticated Playwright sidebar-resize smoke test. Route-level lazy loading and explicit vendor chunks removed the prior default 500 kB client-chunk warning. The resize test uses a short-lived local test session that is ignored by Git; it does not export a user browser session.
 
 ### Database changes
 
@@ -129,6 +135,8 @@ todo.md                  Durable implementation backlog
 | [`docs/operator-enablement-collaboration-plan.md`](docs/operator-enablement-collaboration-plan.md) | Selected operator-guidance, collaboration, and reminder scope with boundaries. |
 | [`docs/operator-enablement-governed-collaboration-release-notes.md`](docs/operator-enablement-governed-collaboration-release-notes.md) | Five-minute guide, governed comments/redaction, shared queues, and draft/deployment-gated SLA reminders. |
 | [`docs/governed-decision-authoring-discovery-plan.md`](docs/governed-decision-authoring-discovery-plan.md) | Bounded Policy Studio, simulation, Evidence Graph, workflow, pack, AI governance, analytics, and ecosystem discovery sequence. |
+| [`docs/research-optimization-simulation-notes.md`](docs/research-optimization-simulation-notes.md) | Current research anchors and analysis-only dynamic-programming/constrained-optimization approach for retained cohorts. |
+| [`docs/ai-governance-control-plane-discovery.md`](docs/ai-governance-control-plane-discovery.md) | Future AI Activity Ledger, budget-policy, routing, caching, replay, approval, and analytics discovery path with no current provider execution claim. |
 | [`docs/product-release-roadmap.md`](docs/product-release-roadmap.md) | Eight release milestones: operate, author, explain, reuse, package, govern AI, improve, and extend. |
 | [`docs/validation-notes-governed-decision-authoring.md`](docs/validation-notes-governed-decision-authoring.md) | Browser and persistence evidence for immutable reminder acknowledgement/dismissal and tenant workload visibility. |
 | [`docs/validation-notes-caseflow.md`](docs/validation-notes-caseflow.md)                               | Browser and automated evidence for the investigation-case flow.                             |
