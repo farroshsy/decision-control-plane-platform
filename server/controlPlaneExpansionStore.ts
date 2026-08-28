@@ -25,12 +25,18 @@ import {
   mcpToolCalls,
   migrationRollouts,
   migrationSteps,
+  policyDefinitions,
+  policyRevisionActivities,
+  policyRevisionReviews,
+  policyRevisions,
+  policySimulationReports,
   replayTraces,
   stateManifests,
   telemetrySnapshots,
   tenantMembers,
   tenants,
   users,
+  evidenceGraphEdges,
 } from "../drizzle/schema";
 import { getDb } from "./db";
 import { advanceRollout, assertTenantRole, verifyReplay } from "./controlPlaneStore";
@@ -43,6 +49,7 @@ import { storagePut } from "./storage";
 import { createHeartbeatJob, deleteHeartbeatJob } from "./_core/heartbeat";
 import { COOKIE_NAME } from "../shared/const";
 import { canCreateCommentWithVisibility, canRedactComment, canResolveAssignedInvestigatorReminder, commentVisibleToRole, reminderEvaluationHour, reminderResolutionTarget, shouldCreateAssignedInvestigatorReminder, teamViewVisibleToTenantMember, type CommentVisibility, type ReminderResolutionAction, type TenantOperatorRole } from "./operatorEnablementPolicy";
+import { canRecordPolicyReview, policyLifecycleTarget, retainedCohortSimulation, type PolicyReviewDecision } from "./policyAuthoringPolicy";
 
 type IntegrationScope = "read_only" | "replay_operator" | "rollout_operator";
 type ApiKeyRow = typeof integrationApiKeys.$inferSelect;
@@ -1273,6 +1280,272 @@ export function compareTracePair(baseline: { id: string; traceHash: string; pars
     allDifferences,
     equivalent: allDifferences.length === 0,
   };
+}
+
+async function recordPolicyRevisionActivity(db: any, input: { tenantId: string; policyId: string; policyRevisionId: string; activityKind: "revision_created" | "review_requested" | "review_recorded" | "revision_approved" | "simulation_recorded"; summary: string; detail: Record<string, unknown>; actorUserId: number }) {
+  await db.insert(policyRevisionActivities).values({
+    id: `policy_activity_${nanoid(16)}`,
+    tenantId: input.tenantId,
+    policyId: input.policyId,
+    policyRevisionId: input.policyRevisionId,
+    activityKind: input.activityKind,
+    summary: input.summary,
+    detailJson: JSON.stringify({ ...input.detail, pilotOnly: true }),
+    actorUserId: input.actorUserId,
+  });
+}
+
+async function ensurePolicyStudioPilotArtifacts(userId: number, tenantId: string) {
+  const { db, tenant } = await tenantFor(tenantId);
+  if (tenant.name !== "Pilot Transaction Rail") return;
+  const policyId = `${tenantId}_policy_aml_screening`;
+  const baselineRevisionId = `${policyId}_revision_27`;
+  const candidateRevisionId = `${policyId}_revision_28_draft`;
+  await insertOnce(policyDefinitions, policyId, {
+    tenantId,
+    policyKey: "aml-screening-disposition",
+    name: "AML screening disposition",
+    description: "Pilot policy definition for evidence-bound screening disposition. This registry records governed authoring evidence; it does not execute or publish a live policy.",
+    domainAdapter: "financial-crime-screening",
+    createdByUserId: userId,
+  });
+  const baselineSource = JSON.stringify({ evidenceCompleteness: "complete", sanctionsThreshold: 0.82, conflictPrecedence: "hold_for_review", simulatedDisposition: "held" });
+  const candidateSource = JSON.stringify({ evidenceCompleteness: "conflicted", sanctionsThreshold: 0.82, conflictPrecedence: "reject", simulatedDisposition: "rejected" });
+  await insertOnce(policyRevisions, baselineRevisionId, {
+    tenantId,
+    policyId,
+    parentRevisionId: null,
+    revisionNumber: 27,
+    semanticVersion: "aml-policy@27",
+    summary: "Retained baseline screening policy used by matched pilot replay traces.",
+    sourceJson: baselineSource,
+    sourceHash: commentContentHash(baselineSource),
+    lifecycleState: "published",
+    simulationState: "completed",
+    createdByUserId: userId,
+  });
+  await insertOnce(policyRevisions, candidateRevisionId, {
+    tenantId,
+    policyId,
+    parentRevisionId: baselineRevisionId,
+    revisionNumber: 28,
+    semanticVersion: "aml-policy@28-draft",
+    summary: "Pilot candidate: conflicts take precedence after retained replay comparison. Draft only; no live policy changes occur.",
+    sourceJson: candidateSource,
+    sourceHash: commentContentHash(candidateSource),
+    lifecycleState: "draft",
+    simulationState: "not_run",
+    createdByUserId: userId,
+  });
+  await insertOnce(policyRevisionActivities, `${baselineRevisionId}_activity_created`, {
+    tenantId,
+    policyId,
+    policyRevisionId: baselineRevisionId,
+    activityKind: "revision_created",
+    summary: "Retained baseline Policy Studio revision indexed for pilot comparison.",
+    detailJson: JSON.stringify({ sourceHash: commentContentHash(baselineSource), seeded: true, pilotOnly: true }),
+    actorUserId: userId,
+  });
+  await insertOnce(policyRevisionActivities, `${candidateRevisionId}_activity_created`, {
+    tenantId,
+    policyId,
+    policyRevisionId: candidateRevisionId,
+    activityKind: "revision_created",
+    summary: "Draft Policy Studio candidate indexed for simulation and maker/checker review.",
+    detailJson: JSON.stringify({ sourceHash: commentContentHash(candidateSource), seeded: true, pilotOnly: true }),
+    actorUserId: userId,
+  });
+}
+
+export async function policyStudio(userId: number, tenantId: string) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
+  await ensurePilotArtifacts(userId, tenantId);
+  await ensurePolicyStudioPilotArtifacts(userId, tenantId);
+  const db = await dbOrThrow();
+  const [definitions, revisions, reviews, activities, reports] = await Promise.all([
+    db.select().from(policyDefinitions).where(eq(policyDefinitions.tenantId, tenantId)).orderBy(desc(policyDefinitions.updatedAt)).limit(30),
+    db.select().from(policyRevisions).where(eq(policyRevisions.tenantId, tenantId)).orderBy(desc(policyRevisions.updatedAt)).limit(100),
+    db.select().from(policyRevisionReviews).where(eq(policyRevisionReviews.tenantId, tenantId)).orderBy(desc(policyRevisionReviews.createdAt)).limit(100),
+    db.select().from(policyRevisionActivities).where(eq(policyRevisionActivities.tenantId, tenantId)).orderBy(desc(policyRevisionActivities.createdAt)).limit(150),
+    db.select().from(policySimulationReports).where(eq(policySimulationReports.tenantId, tenantId)).orderBy(desc(policySimulationReports.createdAt)).limit(50),
+  ]);
+  return {
+    definitions,
+    revisions: revisions.map(revision => ({
+      ...revision,
+      source: safelyParse(revision.sourceJson),
+      reviews: reviews.filter(review => review.policyRevisionId === revision.id),
+      activities: activities.filter(activity => activity.policyRevisionId === revision.id),
+      reports: reports.filter(report => report.policyRevisionId === revision.id).map(report => ({ ...report, objective: safelyParse(report.objectiveJson), feasibility: safelyParse(report.feasibilityJson), results: safelyParse(report.resultsJson) })),
+    })),
+    boundaries: [
+      "Draft, review, approval, and simulation records are tenant-scoped evidence; none changes a live policy interpreter or rollout.",
+      "Publication remains an explicitly deferred, separately governed control in this pilot.",
+      "Maker and checker must be different tenant members for review evidence to be accepted.",
+    ],
+  };
+}
+
+export async function createPolicyRevision(userId: number, tenantId: string, input: { policyKey: string; name: string; description: string; domainAdapter: string; semanticVersion: string; summary: string; sourceJson: string }) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
+  const parsedSource = safelyParse(input.sourceJson);
+  if (!parsedSource || typeof parsedSource !== "object" || Array.isArray(parsedSource)) throw new Error("Policy source must be a JSON object so its authored semantics can be retained and hashed.");
+  const db = await dbOrThrow();
+  const existing = (await db.select().from(policyDefinitions).where(and(eq(policyDefinitions.tenantId, tenantId), eq(policyDefinitions.policyKey, input.policyKey))).limit(1))[0];
+  const policyId = existing?.id ?? `policy_${nanoid(16)}`;
+  if (!existing) await db.insert(policyDefinitions).values({ id: policyId, tenantId, policyKey: input.policyKey, name: input.name, description: input.description, domainAdapter: input.domainAdapter, createdByUserId: userId });
+  const prior = (await db.select().from(policyRevisions).where(and(eq(policyRevisions.tenantId, tenantId), eq(policyRevisions.policyId, policyId))).orderBy(desc(policyRevisions.revisionNumber)).limit(1))[0];
+  const sourceHash = commentContentHash(input.sourceJson);
+  const revisionId = `policy_revision_${nanoid(16)}`;
+  await db.insert(policyRevisions).values({
+    id: revisionId,
+    tenantId,
+    policyId,
+    parentRevisionId: prior?.id ?? null,
+    revisionNumber: (prior?.revisionNumber ?? 0) + 1,
+    semanticVersion: input.semanticVersion,
+    summary: input.summary,
+    sourceJson: input.sourceJson,
+    sourceHash,
+    lifecycleState: "draft",
+    simulationState: "not_run",
+    createdByUserId: userId,
+  });
+  await recordPolicyRevisionActivity(db, { tenantId, policyId, policyRevisionId: revisionId, activityKind: "revision_created", summary: `Policy revision ${input.semanticVersion} created as draft.`, detail: { sourceHash, parentRevisionId: prior?.id ?? null, pilotOnly: true }, actorUserId: userId });
+  return { id: revisionId, policyId, lifecycleState: "draft" as const, sourceHash, pilotOnly: true };
+}
+
+export async function submitPolicyRevisionForReview(userId: number, tenantId: string, revisionId: string) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
+  const db = await dbOrThrow();
+  const revision = (await db.select().from(policyRevisions).where(and(eq(policyRevisions.tenantId, tenantId), eq(policyRevisions.id, revisionId))).limit(1))[0];
+  if (!revision) throw new Error("Policy revision was not found in this tenant.");
+  const next = policyLifecycleTarget(revision.lifecycleState, "submit_for_review");
+  if (!next) throw new Error("Only a draft policy revision can be submitted for maker/checker review.");
+  await db.update(policyRevisions).set({ lifecycleState: next }).where(and(eq(policyRevisions.tenantId, tenantId), eq(policyRevisions.id, revisionId)));
+  await recordPolicyRevisionActivity(db, { tenantId, policyId: revision.policyId, policyRevisionId: revisionId, activityKind: "review_requested", summary: "Policy revision submitted for distinct maker/checker review.", detail: { priorState: revision.lifecycleState, nextState: next, pilotOnly: true }, actorUserId: userId });
+  return { id: revisionId, lifecycleState: next, pilotOnly: true };
+}
+
+export async function recordPolicyRevisionReview(userId: number, tenantId: string, input: { revisionId: string; decision: PolicyReviewDecision; rationale: string }) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
+  const db = await dbOrThrow();
+  const revision = (await db.select().from(policyRevisions).where(and(eq(policyRevisions.tenantId, tenantId), eq(policyRevisions.id, input.revisionId))).limit(1))[0];
+  if (!revision) throw new Error("Policy revision was not found in this tenant.");
+  if (!canRecordPolicyReview({ revisionState: revision.lifecycleState, creatorUserId: revision.createdByUserId, reviewerUserId: userId })) throw new Error("Maker/checker review requires an in-review revision and a reviewer different from the revision creator.");
+  const action = input.decision === "approved" ? "record_approval" : input.decision === "changes_requested" ? "record_changes_requested" : "record_rejection";
+  const next = policyLifecycleTarget(revision.lifecycleState, action);
+  if (!next) throw new Error("This policy review decision is not valid for the current lifecycle state.");
+  await db.insert(policyRevisionReviews).values({ id: `policy_review_${nanoid(16)}`, tenantId, policyRevisionId: revision.id, reviewerUserId: userId, decision: input.decision, rationale: input.rationale });
+  await db.update(policyRevisions).set({ lifecycleState: next }).where(and(eq(policyRevisions.tenantId, tenantId), eq(policyRevisions.id, revision.id)));
+  await recordPolicyRevisionActivity(db, { tenantId, policyId: revision.policyId, policyRevisionId: revision.id, activityKind: input.decision === "approved" ? "revision_approved" : "review_recorded", summary: input.decision === "approved" ? "Distinct checker approved the policy revision; live publication remains deferred." : `Checker recorded ${input.decision.replace(/_/g, " ")} for the policy revision.`, detail: { priorState: revision.lifecycleState, nextState: next, decision: input.decision, rationale: input.rationale, pilotOnly: true }, actorUserId: userId });
+  return { id: revision.id, lifecycleState: next, decision: input.decision, pilotOnly: true };
+}
+
+export async function simulatePolicyRevision(userId: number, tenantId: string, revisionId: string) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator"]);
+  await ensurePilotArtifacts(userId, tenantId);
+  const db = await dbOrThrow();
+  const revision = (await db.select().from(policyRevisions).where(and(eq(policyRevisions.tenantId, tenantId), eq(policyRevisions.id, revisionId))).limit(1))[0];
+  if (!revision) throw new Error("Policy revision was not found in this tenant.");
+  const [traces, evidence, cases] = await Promise.all([
+    db.select().from(replayTraces).where(eq(replayTraces.tenantId, tenantId)).orderBy(desc(replayTraces.createdAt)).limit(80),
+    db.select().from(decisionEvidence).where(eq(decisionEvidence.tenantId, tenantId)).orderBy(desc(decisionEvidence.createdAt)).limit(80),
+    db.select().from(investigationCases).where(eq(investigationCases.tenantId, tenantId)).orderBy(desc(investigationCases.updatedAt)).limit(80),
+  ]);
+  const simulatedSource = safelyParse(revision.sourceJson) as { simulatedDisposition?: "allowed" | "held" | "rejected" } | null;
+  const decisionIds = Array.from(new Set(traces.map(trace => trace.decisionId)));
+  const cohort = decisionIds.map(decisionId => {
+    const decisionTraces = traces.filter(trace => trace.decisionId === decisionId);
+    const baseline = decisionTraces.find(trace => trace.replayStatus === "matched") ?? decisionTraces[decisionTraces.length - 1];
+    const candidate = decisionTraces.find(trace => trace.replayStatus === "diverged") ?? decisionTraces[0] ?? baseline;
+    return {
+      decisionId,
+      baselineDisposition: baseline?.disposition ?? "held",
+      candidateDisposition: simulatedSource?.simulatedDisposition ?? candidate?.disposition ?? baseline?.disposition ?? "held",
+      baselineReplayStatus: baseline?.replayStatus ?? "not_run",
+      candidateReplayStatus: candidate?.replayStatus ?? "not_run",
+      evidenceBound: evidence.some(item => item.decisionId === decisionId),
+      openInvestigation: cases.some(item => item.decisionId === decisionId && item.status === "open"),
+    };
+  });
+  const simulation = retainedCohortSimulation(cohort);
+  const reportId = `simulation_${nanoid(16)}`;
+  const basePolicyVersion = traces.find(trace => trace.replayStatus === "matched")?.policyVersion ?? "retained-baseline-unavailable";
+  await db.insert(policySimulationReports).values({ id: reportId, tenantId, policyRevisionId: revisionId, cohortLabel: "Retained tenant replay cohort", cohortDefinitionJson: JSON.stringify({ decisionIds, source: "retained_replay_traces", liveExecution: false, pilotOnly: true }), basePolicyVersion, resultState: simulation.resultState, objectiveJson: JSON.stringify(simulation.objective), feasibilityJson: JSON.stringify(simulation.feasibility), resultsJson: JSON.stringify(simulation.cases), createdByUserId: userId });
+  await db.update(policyRevisions).set({ simulationState: simulation.resultState === "completed" ? "completed" : "infeasible" }).where(and(eq(policyRevisions.tenantId, tenantId), eq(policyRevisions.id, revisionId)));
+  await recordPolicyRevisionActivity(db, { tenantId, policyId: revision.policyId, policyRevisionId: revisionId, activityKind: "simulation_recorded", summary: `Retained-cohort simulation ${simulation.resultState}; no live policy or rollout state changed.`, detail: { reportId, objective: simulation.objective, feasibility: simulation.feasibility, pilotOnly: true }, actorUserId: userId });
+  await db.insert(evidenceGraphEdges).values({ id: `graph_edge_${nanoid(16)}`, tenantId, sourceType: "policy_revision", sourceId: revisionId, edgeType: "simulated_by", targetType: "simulation_report", targetId: reportId, provenanceJson: JSON.stringify({ source: "policy_simulation_report", createdByUserId: userId, pilotOnly: true }) }).onDuplicateKeyUpdate({ set: { provenanceJson: JSON.stringify({ source: "policy_simulation_report", createdByUserId: userId, pilotOnly: true }) } });
+  return { id: reportId, revisionId, ...simulation, pilotOnly: true };
+}
+
+export async function evidenceGraph(userId: number, tenantId: string, decisionId?: string) {
+  await assertTenantRole(userId, tenantId, ["platform_operator", "compliance_operator", "customer_operator", "developer", "viewer"]);
+  await ensurePilotArtifacts(userId, tenantId);
+  await ensurePolicyStudioPilotArtifacts(userId, tenantId);
+  const db = await dbOrThrow();
+  const traceCondition = decisionId ? and(eq(replayTraces.tenantId, tenantId), eq(replayTraces.decisionId, decisionId)) : eq(replayTraces.tenantId, tenantId);
+  const [traces, evidence, cases, activities, revisions, reports, storedEdges] = await Promise.all([
+    db.select().from(replayTraces).where(traceCondition).orderBy(desc(replayTraces.createdAt)).limit(80),
+    db.select().from(decisionEvidence).where(decisionId ? and(eq(decisionEvidence.tenantId, tenantId), eq(decisionEvidence.decisionId, decisionId)) : eq(decisionEvidence.tenantId, tenantId)).orderBy(desc(decisionEvidence.createdAt)).limit(80),
+    db.select().from(investigationCases).where(decisionId ? and(eq(investigationCases.tenantId, tenantId), eq(investigationCases.decisionId, decisionId)) : eq(investigationCases.tenantId, tenantId)).orderBy(desc(investigationCases.updatedAt)).limit(80),
+    db.select().from(investigationActivities).where(eq(investigationActivities.tenantId, tenantId)).orderBy(desc(investigationActivities.createdAt)).limit(200),
+    db.select().from(policyRevisions).where(eq(policyRevisions.tenantId, tenantId)).orderBy(desc(policyRevisions.updatedAt)).limit(80),
+    db.select().from(policySimulationReports).where(eq(policySimulationReports.tenantId, tenantId)).orderBy(desc(policySimulationReports.createdAt)).limit(40),
+    db.select().from(evidenceGraphEdges).where(eq(evidenceGraphEdges.tenantId, tenantId)).orderBy(desc(evidenceGraphEdges.createdAt)).limit(200),
+  ]);
+  const nodes = new Map<string, { id: string; type: string; label: string; detail: string }>();
+  const edges: Array<{ id: string; source: string; target: string; type: string; provenance: string }> = [];
+  const addNode = (id: string, type: string, label: string, detail: string) => nodes.set(id, { id, type, label, detail });
+  const addEdge = (source: string, target: string, type: string, provenance: string) => edges.push({ id: `${source}:${type}:${target}`, source, target, type, provenance });
+  for (const trace of traces) {
+    const decisionNode = `decision:${trace.decisionId}`;
+    const traceNode = `replay_trace:${trace.id}`;
+    const policyNode = `policy_revision:version:${trace.policyVersion}`;
+    addNode(decisionNode, "decision", trace.decisionId, "Retained decision episode");
+    addNode(traceNode, "replay_trace", trace.id, `${trace.stateVersion} · ${trace.disposition} · ${trace.replayStatus}`);
+    addNode(policyNode, "policy_revision", trace.policyVersion, "Policy version referenced by retained replay");
+    addEdge(decisionNode, policyNode, "evaluated_by_policy", "replay trace policyVersion");
+    addEdge(decisionNode, traceNode, "replayed_as", "retained replay trace");
+  }
+  for (const item of evidence) {
+    const decisionNode = `decision:${item.decisionId}`;
+    const evidenceNode = `evidence:${item.id}`;
+    addNode(decisionNode, "decision", item.decisionId, "Retained decision episode");
+    addNode(evidenceNode, "evidence", item.id, `${item.disposition} · audit ${item.auditStatus}`);
+    addEdge(decisionNode, evidenceNode, "used_evidence", "decision evidence record");
+  }
+  for (const investigationCase of cases) {
+    const decisionNode = `decision:${investigationCase.decisionId}`;
+    const caseNode = `investigation_case:${investigationCase.id}`;
+    addNode(decisionNode, "decision", investigationCase.decisionId, "Retained decision episode");
+    addNode(caseNode, "investigation_case", investigationCase.id, investigationCase.summary);
+    addEdge(decisionNode, caseNode, "opened_investigation", "tenant-scoped investigation record");
+    if (investigationCase.status !== "open") {
+      const outcomeNode = `outcome:${investigationCase.id}:${investigationCase.status}`;
+      addNode(outcomeNode, "outcome", investigationCase.status.replace(/_/g, " "), "Recorded case outcome");
+      addEdge(caseNode, outcomeNode, "resolved_by_outcome", "investigation case status");
+    }
+    for (const activity of activities.filter(item => item.caseId === investigationCase.id)) {
+      const activityNode = `audit_activity:${activity.id}`;
+      addNode(activityNode, "audit_activity", activity.activityKind.replace(/_/g, " "), activity.summary);
+      addEdge(caseNode, activityNode, "recorded_in_audit", "immutable investigation activity");
+    }
+  }
+  for (const revision of revisions) addNode(`policy_revision:${revision.id}`, "policy_revision", revision.semanticVersion, `${revision.lifecycleState} · ${revision.summary}`);
+  for (const report of reports) {
+    const reportNode = `simulation_report:${report.id}`;
+    addNode(reportNode, "simulation_report", report.cohortLabel, `${report.resultState} retained-cohort simulation`);
+    addEdge(`policy_revision:${report.policyRevisionId}`, reportNode, "simulated_by", "stored simulation report");
+  }
+  for (const stored of storedEdges) {
+    const source = `${stored.sourceType}:${stored.sourceId}`;
+    const target = `${stored.targetType}:${stored.targetId}`;
+    if (!nodes.has(source)) addNode(source, stored.sourceType, stored.sourceId, "Stored provenance reference");
+    if (!nodes.has(target)) addNode(target, stored.targetType, stored.targetId, "Stored provenance reference");
+    addEdge(source, target, stored.edgeType, "persisted provenance edge");
+  }
+  return { nodes: Array.from(nodes.values()), edges: edges.filter((edge, index, list) => list.findIndex(candidate => candidate.id === edge.id) === index), boundaries: ["The graph is a read model over tenant-scoped retained records.", "Every edge identifies a source record or stored provenance reference.", "Graph exploration does not edit relationships, execute policy, publish a revision, or traverse tenants."], pilotOnly: true };
 }
 
 function flattenTrace(value: unknown, path = ""): Record<string, string> {

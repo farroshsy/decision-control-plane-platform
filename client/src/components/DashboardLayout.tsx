@@ -22,16 +22,19 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Activity, BookOpenText, Bot, Compass, DatabaseZap, FileSearch, Gauge, GitCompareArrows, LayoutDashboard, LogOut, Moon, Network, PanelLeft, ShieldCheck, Sun, Waypoints } from "lucide-react";
+import { Activity, BookOpenText, Bot, Compass, DatabaseZap, FilePenLine, FileSearch, Gauge, GitCompareArrows, LayoutDashboard, LogOut, Moon, Network, PanelLeft, ShieldCheck, Sun, Waypoints } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 import { resolveSidebarWidth } from "./dashboardLayoutPolicy";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Control room", path: "/app" },
   { icon: Compass, label: "Getting started", path: "/app/getting-started" },
+  { icon: FilePenLine, label: "Policy studio", path: "/app/policy-studio" },
+  { icon: Network, label: "Evidence graph", path: "/app/evidence-graph" },
   { icon: GitCompareArrows, label: "State evolution", path: "/app/state" },
   { icon: DatabaseZap, label: "Rollouts", path: "/app/rollouts" },
   { icon: Gauge, label: "Operations", path: "/app/operations" },
@@ -263,14 +266,26 @@ function DashboardLayoutContent({
             </DropdownMenu>
           </SidebarFooter>
         </Sidebar>
-        <div
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
-          onMouseDown={() => {
-            if (isCollapsed) return;
-            setIsResizing(true);
-          }}
-          style={{ zIndex: 50 }}
-        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              data-testid="sidebar-resize-handle"
+              aria-label="Resize navigation sidebar"
+              title="Drag to resize navigation"
+              className={`group absolute top-0 -right-1 h-full w-3 cursor-col-resize focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${isCollapsed ? "hidden" : ""}`}
+              onMouseDown={() => {
+                if (isCollapsed) return;
+                setIsResizing(true);
+              }}
+              style={{ zIndex: 50 }}
+            >
+              <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover:bg-primary/70 group-focus-visible:bg-primary/70" />
+              <span className="absolute left-1/2 top-1/2 h-10 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-transparent transition-all group-hover:h-16 group-hover:bg-primary/50 group-focus-visible:h-16 group-focus-visible:bg-primary/50" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Drag to resize navigation</TooltipContent>
+        </Tooltip>
       </div>
 
       <SidebarInset>

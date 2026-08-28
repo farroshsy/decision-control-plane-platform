@@ -90,3 +90,24 @@
 - [x] Reframe the remaining platform roadmap into Governed Decision Operations, Authoring, Knowledge Graph, Workflow Platform, Industry Packs, AI Governance, Decision Intelligence, and Ecosystem milestones.
 - [x] Diagnose and fix the Control Room ResizeObserver loop warning without changing tenant-scoped dashboard behavior.
 - [x] Validate and checkpoint the ResizeObserver warning fix.
+- [ ] Define the Governed Decision Authoring contracts, pilot boundaries, dynamic-programming simulation approach, and provenance-only graph vocabulary.
+- [ ] Implement a tenant-scoped Policy Studio revision registry with immutable revision identity and maker/checker review state transitions.
+- [ ] Add replay-backed retained-cohort simulation reports that predict policy revision impact without changing live policy or rollout state.
+- [ ] Build a tenant-scoped provenance-only Evidence Graph read model connecting decisions, policy revisions, replay, investigations, outcomes, and audit evidence.
+- [ ] Add detailed contextual intent, use, workflow, and expected-outcome guidance across the Policy Studio, simulation, graph, and existing operator workspaces.
+- [ ] Add an automated sidebar-resize end-to-end smoke check and a discoverable drag-handle hover/tooltip treatment.
+- [ ] Split large client bundles with explicit Vite chunking and verify the build advisory is addressed without breaking route behavior.
+- [ ] Validate, document, and checkpoint the Governed Decision Authoring release.
+- [x] Implement the tenant-scoped AI Governance pilot: hash-bound activity ledger, metadata-only provider profiles, source-hashed policies, deterministic routing/budget/cache recommendations, replay, distinct approval evidence, and observed analytics without provider execution.
+- [x] Add and browser-validate explicit loading, error, and empty states for every AI Governance workspace.
+- [x] Define the 165-metric governed registry, including formulas, owners, cadence, thresholds, lineage, confidence, systems of record, and acquisition contracts.
+- [x] Implement evidence-only metric observations, manual computation runs, source-required coverage, shared Executive/Governance/AI/Workflow scorecards, and persisted source-contract completeness checks.
+- [ ] Execute and verify a tenant-scoped governed metric-definition version through the Registry UI, retaining the immutable definition chain without changing an external source or recomputing a value.
+- [x] Make Policy Studio E2E fixtures atomically validation-only, excluded from metrics and production reporting, and prove the exact maker-to-review-to-distinct-checker record carries all required immutable metadata.
+- [x] Define an internal-first Evidence Connector product strategy and redesign Evidence Sources to distinguish canonical first-party evidence from unadmitted external connectors, including deliberately disabled PostHog.
+- [x] Define and implement the canonical Decision Event taxonomy, versioned definition registry, append-only idempotent ledger, historical first-party projection, retention/privacy classes, hashes, lineage, correlation, and tenant isolation.
+- [x] Instrument eligible first-party policy, simulation, review, replay, investigation, workflow, reminder, AI-governance, webhook-simulation, and bounded MCP operations as canonical Decision Events without raw PII, double counting, provider execution, or external delivery.
+- [x] Derive retained adoption, activation, engagement, workflow, and governed-decision metrics only from canonical Decision Events and expose event provenance as non-causal trace context in the Metric Registry and Evidence Graph.
+- [x] Build and browser-validate the tenant-scoped Decision Events workspace with event registry, immutable ledger, correlation journeys, and the explicit no-browser-clickstream/no-PostHog boundary.
+- [ ] Create and manually evaluate one user-approved recommendation-only metric alert over an observed tenant metric, retaining immutable evidence with no schedule, notification, escalation, action, or external delivery.
+- [ ] Validate the combined release through complete unit, type, production-build, database, and authenticated browser checks; update documentation and save the post-release checkpoint.
